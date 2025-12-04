@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?   // Hashed password for credentials provider (nullable for email-only users)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  invoices      Invoice[]
+  transactions  Transaction[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  userId        String
+  filename      String
+  filePath      String
+  supplier      String
+  invoiceDate   DateTime
+  currency      String
+  totalAmount   Float
+  vatAmount     Float?
+  invoiceNumber String?
+  status        String   @default("uploading") // uploading, processing, done, error
+  extractedData Json?    // Full Invoice model from extraction
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches       Match[]
+  accounting    AccountingEntry?
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  transactionDate DateTime
+  amount      Float
+  currency    String
+  description String?
+  rawData     Json     // Full CSV row data
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches     Match[]
+}
+
+model Match {
+  id                String   @id @default(cuid())
+  invoiceId         String
+  transactionId     String
+  confidence        Float
+  reason            String
+  verified          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  transaction       Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accounting        AccountingEntry?
+}
+
+model AccountingEntry {
+  id          String   @id @default(cuid())
+  invoiceId   String?  @unique
+  matchId     String?  @unique
+  date        DateTime
+  amount      Float
+  lineItems   Json     // Array of AccountingEntryLineItem
+  createdAt   DateTime @default(now())
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id], map: "AccountingEntry_invoiceId_fkey")
+  match       Match?   @relation(fields: [matchId], references: [id], map: "AccountingEntry_matchId_fkey")
+}
