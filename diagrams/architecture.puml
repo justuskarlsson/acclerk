@@ -1,0 +1,201 @@
+/' 
+High-level architecture diagram for AI Revisor - Next.js self-hosted variant
+Next.js with PostgreSQL, API routes rewritten to Next.js API routes
+Lean but maintainable architecture
+'/
+
+@startuml
+
+!define PRIMARY_COLOR #3B82F6
+!define SECONDARY_COLOR #10B981
+!define ACCENT_COLOR #F59E0B
+!define DANGER_COLOR #EF4444
+!define NEUTRAL_COLOR #6B7280
+!define BG_COLOR #F3F4F6
+
+skinparam backgroundColor #F3F4F6
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+
+package "Next.js Application" #E0E7FF {
+  component "Next.js App Router" as NextApp #3B82F6
+  component "React Components\n(UI)" as ReactUI #3B82F6
+  component "shadcn/ui\nComponent Library" as ShadcnUI #8B5CF6
+  component "Tailwind CSS\nStyling" as Tailwind #06B6D4
+  component "NextAuth.js\nAuthentication" as NextAuth #10B981
+  component "API Routes\n(/api/*)" as APIRoutes #10B981
+  component "Server Actions\n(Business Logic)" as ServerActions #F59E0B
+  component "React Hook Form\nForm Handling" as ReactHookForm #EC4899
+  component "Zod\nSchema Validation" as Zod #F59E0B
+  component "Zustand\nState Management" as Zustand #EC4899
+}
+
+package "Database Layer" #D1FAE5 {
+  database "PostgreSQL" as Postgres #10B981
+  component "Prisma ORM\n(Schema & Queries)" as Prisma #10B981
+  component "Prisma Migrate\nSchema Migrations" as PrismaMigrate #10B981
+  component "Connection Pooling\n(pgBouncer/Prisma)" as ConnectionPool #10B981
+}
+
+package "Views & Components" #F3E8FF {
+  component "PDF Table View\n(Status: uploading/processing/done)" as PDFTableView #8B5CF6
+  component "Action Bar\n(Button Icons + Hover Hints)" as ActionBar #8B5CF6
+  component "PDF Preview\n(react-pdf/pdf.js)" as PDFPreview #8B5CF6
+  component "react-pdf\nPDF.js React Wrapper" as ReactPDF #8B5CF6
+  component "Verify Route\n(/verify)" as VerifyRoute #A78BFA
+  component "Overview Route\n(/overview)" as OverviewRoute #A78BFA
+  component "Plan Route\n(/plan)" as PlanRoute #A78BFA
+}
+
+package "File Storage" #FEF3C7 {
+  database "PDF Invoices\n(local/object storage)" as InvoiceStorage #F59E0B
+}
+
+cloud "External Services" #FEE2E2 {
+  component "OpenAI API\no4-mini model" as OpenAI #EF4444
+}
+
+ReactUI --> NextApp
+ReactUI --> ShadcnUI
+ReactUI --> Tailwind
+ReactUI --> Zustand
+ReactUI --> ReactHookForm
+ReactHookForm --> Zod
+
+NextApp --> VerifyRoute
+NextApp --> OverviewRoute
+NextApp --> PlanRoute
+
+PDFPreview --> ReactPDF
+VerifyRoute --> PDFTableView
+VerifyRoute --> PDFPreview
+
+NextApp --> NextAuth
+NextApp --> APIRoutes
+APIRoutes --> ServerActions
+APIRoutes --> NextAuth
+
+ServerActions --> Prisma
+Prisma --> Postgres
+PrismaMigrate --> Postgres
+ConnectionPool --> Postgres
+
+ServerActions --> InvoiceStorage
+ServerActions --> OpenAI
+
+note right of Postgres
+  Tables:
+  - users
+  - invoices
+  - transactions
+  - matches
+  - accounting_entries
+end note
+
+note right of ServerActions
+  Core functions:
+  - extractInvoices()
+  - matchInvoicesToTransactions()
+  - generateAccountingEntries()
+end note
+
+note right of APIRoutes
+  Next.js API routes:
+  - /api/upload-invoices
+  - /api/analyze-invoices
+  - /api/upload-transactions
+  - /api/transactions/connect
+  - /api/accounting/create
+  
+  All views/components
+  communicate via these routes
+end note
+
+note right of ShadcnUI
+  UI Components:
+  - Button, Input, Form
+  - Dialog, Sheet
+  - Table, Card
+  - Upload, Progress
+end note
+
+note right of NextAuth
+  Auth Features:
+  - Session management
+  - User authentication
+  - Protected routes
+  - API route guards
+end note
+
+note right of PDFTableView
+  Columns:
+  - PDF filename
+  - Status (uploading/processing/done)
+  - Upload date
+  - Processing result
+  
+  Used in /verify left panel
+  Manages state via Zustand
+end note
+
+note right of ActionBar
+  Button icons with hover hints
+  Actions: Upload PDFs, etc.
+  
+  Triggers Zustand actions
+  Communicates via API routes
+end note
+
+note right of VerifyRoute
+  Split View:
+  Left: PDFTableView (unverified entries)
+  Right: PDFPreview + AccountingLineItems
+  Actions: Verify/Reject with LLM feedback
+  
+  Communicates via API routes
+end note
+
+note right of OverviewRoute
+  Key Metrics:
+  - Total VAT to pay (moms)
+  - Company profit (vinst)
+  - Period overview
+  
+  Uses Zustand for state
+  Fetches via API routes
+end note
+
+note right of PlanRoute
+  Tax Planning (Fåmannabolag AB):
+  - Private income input
+  - Capital netto for year
+  - Compare: Salary vs Dividend
+  - Optimization suggestions
+  
+  Uses Zustand for inputs
+  Calculations via API routes
+end note
+
+note right of Zustand
+  State Stores:
+  - PDF upload/processing state
+  - Verification state
+  - Overview aggregations
+  - Tax planning inputs
+  
+  Used by all views/components
+  for client-side state
+end note
+
+note right of NextApp
+  Routes:
+  - /verify (split view)
+  - /overview (stats)
+  - /plan (tax planning)
+  
+  Renders all views/components
+  with SSR/SSG/CSR
+end note
+
+@enduml
+

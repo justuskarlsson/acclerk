@@ -1,0 +1,119 @@
+/' 
+File system structure diagram for next/ directory
+Shows all source files and folders with short descriptions
+'/
+
+@startuml
+left to right direction
+
+skinparam backgroundColor #F3F4F6
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+
+package "next/" #F3F4F6 {
+  
+  ' Root files
+  component "package.json\nProject dependencies\nand scripts" as PackageJson #10B981
+  component "tsconfig.json\nTypeScript configuration" as TsConfig #10B981
+  component "next.config.ts\nNext.js configuration" as NextConfig #10B981
+  component "eslint.config.mjs\nESLint configuration" as EslintConfig #10B981
+  component "postcss.config.mjs\nPostCSS configuration" as PostcssConfig #10B981
+  component "prisma.config.ts\nPrisma configuration" as PrismaConfig #10B981
+  component "README.md\nProject documentation" as Readme #10B981
+  
+  ' App directory
+  package "app/" as AppFolder #3B82F6 {
+    component "layout.tsx\nRoot layout component\nSets up HTML structure and fonts" as AppLayout #8B5CF6
+    component "page.tsx\nRoot page\nRedirects to /verify" as AppPage #8B5CF6
+    component "globals.css\nGlobal CSS styles" as AppGlobalsCSS #10B981
+    component "favicon.ico\nSite favicon" as AppFavicon #10B981
+  }
+  
+  ' Auth pages
+  package "app/(auth)/" as AuthFolder #3B82F6 {
+    component "login/page.tsx\nLogin page component\nAuthentication UI" as LoginPage #8B5CF6
+    component "register/page.tsx\nRegistration page component\nUser signup UI" as RegisterPage #8B5CF6
+  }
+  
+  ' Dashboard pages
+  package "app/(dashboard)/" as DashboardFolder #3B82F6 {
+    component "verify/page.tsx\nInvoice verification page\nSplit view for matching" as VerifyPage #8B5CF6
+    component "overview/page.tsx\nFinancial overview dashboard\nShows summary statistics" as OverviewPage #8B5CF6
+    component "plan/page.tsx\nTax planning page\nTax planning tools and forms" as PlanPage #8B5CF6
+  }
+  
+  ' API routes
+  package "app/api/" as ApiFolder #3B82F6 {
+    component "upload-invoices/route.ts\nPOST endpoint\nHandles invoice PDF uploads" as UploadInvoicesRoute #F59E0B
+    component "analyze-invoices/route.ts\nPOST/GET endpoints\nTriggers invoice analysis" as AnalyzeInvoicesRoute #F59E0B
+    component "upload-transactions/route.ts\nPOST endpoint\nHandles transaction CSV uploads" as UploadTransactionsRoute #F59E0B
+    component "transactions/connect/route.ts\nPOST/GET endpoints\nMatches invoices to transactions" as ConnectRoute #F59E0B
+    component "accounting/create/route.ts\nPOST endpoint\nGenerates accounting entries" as CreateAccountingRoute #F59E0B
+    component "auth/[...nextauth]/route.ts\nNextAuth handler\nGET/POST for auth callbacks" as NextAuthRoute #F59E0B
+  }
+  
+  ' Components
+  package "components/" as ComponentsFolder #3B82F6 {
+    component "pdf/PDFTableView.tsx\nPDF table view component\nDisplays invoice data in table" as PDFTableView #EC4899
+    component "pdf/PDFPreview.tsx\nPDF preview component\nShows PDF document preview" as PDFPreview #EC4899
+    component "pdf/ActionBar.tsx\nAction bar component\nActions for selected items" as ActionBar #EC4899
+    component "verify/VerifySplitView.tsx\nSplit view component\nSide-by-side invoice/transaction view" as VerifySplitView #EC4899
+    component "overview/OverviewDashboard.tsx\nOverview dashboard component\nFinancial summary and charts" as OverviewDashboard #EC4899
+    component "plan/TaxPlanningForm.tsx\nTax planning form component\nTax calculation and planning" as TaxPlanningForm #EC4899
+  }
+  
+  ' Library files
+  package "lib/" as LibFolder #3B82F6 {
+    component "db.ts\nPrisma client singleton\nDatabase connection" as LibDb #8B5CF6
+    component "auth.ts\nNextAuth configuration\nAuth providers and callbacks" as LibAuth #8B5CF6
+    component "openai.ts\nOpenAI client instance\nAPI configuration" as LibOpenAI #8B5CF6
+    component "storage.ts\nFile storage utilities\nSave/read files from storage" as LibStorage #8B5CF6
+  }
+  
+  ' Validation schemas
+  package "lib/validations/" as ValidationsFolder #3B82F6 {
+    component "invoice.ts\nZod schema for Invoice\nInvoice data validation" as ValidationInvoice #06B6D4
+    component "transaction.ts\nZod schemas for transactions\nMatching result validation" as ValidationTransaction #06B6D4
+    component "accounting.ts\nZod schema for accounting entries\nAccounting data validation" as ValidationAccounting #06B6D4
+  }
+  
+  ' Server actions
+  package "server/actions/" as ActionsFolder #3B82F6 {
+    component "invoices.ts\nServer action\nAnalyzes uploaded invoices" as ActionInvoices #8B5CF6
+    component "transactions.ts\nServer action\nConnects transactions to invoices" as ActionTransactions #8B5CF6
+    component "accounting.ts\nServer action\nCreates accounting entries" as ActionAccounting #8B5CF6
+  }
+  
+  ' Server services
+  package "server/services/" as ServicesFolder #3B82F6 {
+    component "invoice-extractor.ts\nBusiness logic service\nExtracts data from invoice PDFs\nusing OpenAI o4-mini" as ServiceInvoiceExtractor #8B5CF6
+    component "transaction-matcher.ts\nBusiness logic service\nMatches invoices to transactions\nusing OpenAI o4-mini" as ServiceTransactionMatcher #8B5CF6
+    component "accounting-generator.ts\nBusiness logic service\nGenerates accounting entries\nwith SRU codes using OpenAI" as ServiceAccountingGenerator #8B5CF6
+  }
+  
+  ' Stores
+  package "stores/" as StoresFolder #3B82F6 {
+    component "data-store.ts\nZustand store\nCentralized data state\n(invoices, transactions, matches)" as StoreData #8B5CF6
+    component "ui-store.ts\nZustand store\nUI state management\n(selections, filters, loading)" as StoreUI #8B5CF6
+  }
+  
+  ' Prisma
+  package "prisma/" as PrismaFolder #3B82F6 {
+    component "schema.prisma\nPrisma schema definition\nDatabase models and relations" as PrismaSchema #06B6D4
+  }
+  
+  ' Types
+  package "types/" as TypesFolder #3B82F6 {
+    component "next-auth.d.ts\nTypeScript type definitions\nExtends NextAuth Session types" as TypesNextAuth #8B5CF6
+  }
+  
+  ' Public
+  package "public/" as PublicFolder #3B82F6 {
+    note right
+      Static assets
+      (SVG icons, etc.)
+    end note
+  }
+}
+
+@enduml

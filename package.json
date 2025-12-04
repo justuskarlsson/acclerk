@@ -13,7 +13,10 @@
     "test:e2e:watch": "dotenv -e .env.test -- playwright test --ui",
     "test": "pnpm test:smoke && pnpm test:e2e",
     "db:reset": "dotenv -e .env.test -- tsx tests/helpers/db-reset.ts",
-    "db:seed": "dotenv -e .env.test -- tsx tests/helpers/db-seed.ts"
+    "db:seed": "dotenv -e .env.test -- tsx tests/helpers/db-seed.ts",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "build-storybook": "storybook build",
+    "test:storybook": "test-storybook"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -21,8 +24,17 @@
     "@prisma/client": "^7.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "lucide-react": "^0.555.0",
     "next": "16.0.3",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.11",
@@ -33,26 +45,48 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.66.1",
     "react-pdf": "^10.2.0",
+    "tailwind-merge": "^3.4.0",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^4.1.3",
     "@playwright/test": "^1.57.0",
     "@prisma/adapter-pg": "^7.0.1",
+    "@storybook/addon-a11y": "^10.1.4",
+    "@storybook/addon-docs": "^10.1.4",
+    "@storybook/addon-onboarding": "^10.1.4",
+    "@storybook/addon-vitest": "^10.1.4",
+    "@storybook/nextjs-vite": "^10.1.4",
+    "@storybook/test-runner": "^0.24.2",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/browser-playwright": "^4.0.15",
+    "@vitest/coverage-v8": "^4.0.15",
     "dotenv": "^17.2.3",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "eslint-plugin-storybook": "^10.1.4",
+    "msw": "^2.12.4",
+    "msw-storybook-addon": "^2.0.6",
     "pg": "^8.16.3",
     "playwright": "^1.57.0",
+    "storybook": "^10.1.4",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
-    "typescript": "^5"
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5",
+    "vite": "^7.2.6",
+    "vitest": "^4.0.15"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

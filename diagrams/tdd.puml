@@ -1,0 +1,201 @@
+/' 
+TDD Test Infrastructure diagram for AI Revisor Next.js project
+Shows 3-tier testing strategy: smoke tests, component tests (structure), and E2E integration tests
+Focus on use-case driven testing with fuzzy assertions, separate test database, and test fixtures
+'/
+
+@startuml
+
+!define PRIMARY_COLOR #3B82F6
+!define SECONDARY_COLOR #10B981
+!define ACCENT_COLOR #F59E0B
+!define DANGER_COLOR #EF4444
+!define NEUTRAL_COLOR #6B7280
+!define BG_COLOR #F3F4F6
+
+skinparam backgroundColor #F3F4F6
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+
+package "Test Infrastructure" #E0E7FF {
+  
+  ' Tier 1: Smoke Tests
+  package "Tier 1: Smoke Tests\n(~50% error catch)" #D1FAE5 {
+    component "smoke-test.ts\nTypeScript compilation check\nNext.js build validation\nESLint check\nBasic sanity checks" as SmokeTest #10B981
+    component "test:smoke script\nRuns before commits/CI" as SmokeScript #10B981
+  }
+  
+  ' Tier 2: Component Tests (Structure Only)
+  package "Tier 2: Component Tests\n(Structure Only)" #FEF3C7 {
+    component "tests/components/\nDirectory structure\nMinimal implementation\nCan expand later" as ComponentTests #F59E0B
+  }
+  
+  ' Tier 3: E2E Integration Tests (Primary Focus)
+  package "Tier 3: E2E Integration Tests\n(Use Case Focused)" #F3E8FF {
+    component "Playwright Config\nBase URL, test DB setup\nBrowser configuration" as PlaywrightConfig #8B5CF6
+    
+    package "Use Case Tests" #F3E8FF {
+      component "auth.spec.ts\nUC1: Login and authentication\nPerson → User flow" as AuthTest #A78BFA
+      component "pdf-upload.spec.ts\nUC2: Upload PDF and preview\nFile upload and display" as PDFUploadTest #A78BFA
+      component "expenses.spec.ts\nUpload invoices/transactions\nMatching workflow" as ExpensesTest #A78BFA
+      component "verification.spec.ts\nVerify/reject matches\nLLM feedback" as VerificationTest #A78BFA
+      component "accounting.spec.ts\nGenerate accounting entries\nSRU codes" as AccountingTest #A78BFA
+      component "overview.spec.ts\nFinancial overview dashboard\nStatistics display" as OverviewTest #A78BFA
+      component "tax-planning.spec.ts\nTax planning calculations\nSalary vs dividend" as TaxPlanningTest #A78BFA
+    }
+    
+    package "Test Helpers" #F3E8FF {
+      component "db-helpers.ts\nSeed test DB\nClean DB state\nCreate test users" as DBHelpers #A78BFA
+      component "auth-helpers.ts\nLogin as test user\nCreate sessions\nAuth utilities" as AuthHelpers #A78BFA
+      component "file-helpers.ts\nUpload test PDFs/CSVs\nFile operations" as FileHelpers #A78BFA
+      component "api-helpers.ts\nDirect API calls\nSetup/verification" as APIHelpers #A78BFA
+    }
+    
+    package "Test Fixtures" #FEF3C7 {
+      database "invoices/\nSample PDF invoices\nDifferent currencies\nVarious formats" as InvoiceFixtures #F59E0B
+      database "transactions/\nSample CSV files\nBank transactions\nMixed currencies" as TransactionFixtures #F59E0B
+      component "users.ts\nTest user definitions\nPredefined accounts" as UserFixtures #F59E0B
+    }
+  }
+}
+
+package "Test Database" #D1FAE5 {
+  database "PostgreSQL Test DB\n(separate from dev)\nairevisor_test database\nIsolated test state" as TestDB #10B981
+  component "Prisma Migrations\nRun on test DB\nSchema setup" as TestMigrations #10B981
+  component "DATABASE_URL_TEST\nEnvironment variable\nTest DB connection" as TestDBEnv #10B981
+}
+
+package "Development Workflow" #FEE2E2 {
+  component "test:smoke\nQuick validation\nBefore commits" as WorkflowSmoke #EF4444
+  component "test:e2e\nFull integration tests\nUse case validation" as WorkflowE2E #EF4444
+  component "test:db:reset\nReset test database\nClean state" as WorkflowReset #EF4444
+  component "test:db:seed\nSeed test data\nFixtures setup" as WorkflowSeed #EF4444
+}
+
+cloud "Test Environment" #F3F4F6 {
+  component ".env.test\nTest environment variables\nTEST_DATABASE_URL\nNEXTAUTH_URL\nOPENAI_API_KEY (dummy)\nEMAIL_SERVER (dummy)" as TestEnv #6B7280
+  component ".env.example\nTemplate with explanations\nHow to obtain each variable" as EnvExample #6B7280
+}
+
+' Connections
+SmokeTest --> SmokeScript
+SmokeScript --> WorkflowSmoke
+
+PlaywrightConfig --> AuthTest
+PlaywrightConfig --> PDFUploadTest
+PlaywrightConfig --> ExpensesTest
+PlaywrightConfig --> VerificationTest
+PlaywrightConfig --> AccountingTest
+PlaywrightConfig --> OverviewTest
+PlaywrightConfig --> TaxPlanningTest
+
+AuthTest --> AuthHelpers
+PDFUploadTest --> FileHelpers
+PDFUploadTest --> DBHelpers
+ExpensesTest --> FileHelpers
+ExpensesTest --> DBHelpers
+VerificationTest --> APIHelpers
+AccountingTest --> DBHelpers
+OverviewTest --> DBHelpers
+TaxPlanningTest --> DBHelpers
+
+DBHelpers --> TestDB
+AuthHelpers --> TestDB
+FileHelpers --> InvoiceFixtures
+FileHelpers --> TransactionFixtures
+DBHelpers --> UserFixtures
+
+TestMigrations --> TestDB
+TestDBEnv --> TestDB
+
+WorkflowE2E --> PlaywrightConfig
+WorkflowReset --> TestDB
+WorkflowSeed --> TestDB
+
+TestEnv --> TestDB
+TestEnv --> PlaywrightConfig
+
+note right of SmokeTest
+  Catches ~50% of errors:
+  - TypeScript compilation
+  - Build process
+  - Linting
+  - Basic sanity checks
+end note
+
+note right of PlaywrightConfig
+  Configuration:
+  - Base URL: localhost:3000
+  - Test DB connection
+  - Browser setup
+  - Timeouts and retries
+end note
+
+note right of AuthTest
+  UC1: Login Flow
+  - Access login page
+  - Submit login form
+  - Become authenticated User
+  - Access protected routes
+  - Session persists
+end note
+
+note right of PDFUploadTest
+  UC2: PDF Upload & Preview
+  - Upload PDF file
+  - Store in DB
+  - View preview
+  - Appears in invoice list
+end note
+
+note right of TestDB
+  Separate from dev database
+  Isolated test state
+  Reset before each suite
+  Use fixtures for data
+end note
+
+note right of DBHelpers
+  Functions:
+  - seedTestDB()
+  - cleanTestDB()
+  - createTestUser()
+  - resetTestDB()
+end note
+
+note right of AuthHelpers
+  Functions:
+  - loginAsTestUser()
+  - createTestSession()
+  - getAuthCookie()
+end note
+
+note right of FileHelpers
+  Functions:
+  - uploadTestPDF()
+  - uploadTestCSV()
+  - getTestFile()
+end note
+
+note right of TestEnv
+  Required variables:
+  - TEST_DATABASE_URL
+  - NEXTAUTH_URL
+  - NEXTAUTH_SECRET
+  - OPENAI_API_KEY (dummy OK)
+  - EMAIL_SERVER (dummy OK)
+  - EMAIL_FROM
+end note
+
+note right of WorkflowE2E
+  Test Philosophy:
+  - Focus on use cases
+  - Fuzzy assertions
+  - Verify outcomes, not UI
+  - ~95% error catch rate
+  - Maintainable tests
+end note
+
+@enduml
+
+
