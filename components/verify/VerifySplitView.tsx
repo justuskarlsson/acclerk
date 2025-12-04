@@ -84,9 +84,11 @@ export function VerifySplitView() {
     }
   }
 
-  // Construct PDF URL from file path
+  // Construct PDF URL from file path - handle both external URLs and local paths
   const pdfUrl = selectedInvoice?.filePath
-    ? `/api/files/${encodeURIComponent(selectedInvoice.filePath)}`
+    ? selectedInvoice.filePath.startsWith("http")
+      ? selectedInvoice.filePath
+      : `/api/files/${encodeURIComponent(selectedInvoice.filePath)}`
     : null
 
   return (

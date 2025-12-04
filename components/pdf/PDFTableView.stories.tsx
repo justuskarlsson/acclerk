@@ -11,7 +11,7 @@ const mockInvoices = [
     supplier: "Acme Corp",
     totalAmount: 15000,
     currency: "SEK",
-    filePath: "/storage/invoices/inv-1.pdf",
+    filePath: "https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf",
   },
   {
     id: "inv-2",
@@ -21,7 +21,8 @@ const mockInvoices = [
     supplier: "",
     totalAmount: 0,
     currency: "",
-    filePath: "/storage/invoices/inv-2.pdf",
+    // Using a CORS-friendly PDF URL (Mozilla's test PDF from GitHub)
+    filePath: "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf",
   },
   {
     id: "inv-3",
@@ -31,7 +32,7 @@ const mockInvoices = [
     supplier: "",
     totalAmount: 0,
     currency: "",
-    filePath: "/storage/invoices/inv-3.pdf",
+    filePath: "https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf",
   },
   {
     id: "inv-4",
@@ -41,7 +42,7 @@ const mockInvoices = [
     supplier: "",
     totalAmount: 0,
     currency: "",
-    filePath: "/storage/invoices/inv-4.pdf",
+    filePath: "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf",
   },
   {
     id: "inv-5",
@@ -51,7 +52,7 @@ const mockInvoices = [
     supplier: "Supplier AB",
     totalAmount: 8500,
     currency: "SEK",
-    filePath: "/storage/invoices/inv-5.pdf",
+    filePath: "https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf",
   },
 ]
 
@@ -121,4 +122,3 @@ export const Error: Story = {
     },
   },
 }
-

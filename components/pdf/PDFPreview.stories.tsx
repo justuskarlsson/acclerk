@@ -24,3 +24,9 @@ export const Empty: Story = {
     pdfUrl: null,
   },
 }
+
+export const WithPDF: Story = {
+  args: {
+    pdfUrl: "https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf",
+  },
+}
