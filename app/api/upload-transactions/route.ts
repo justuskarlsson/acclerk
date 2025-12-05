@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
   const headers = lines[0].split(";")
   const userId = session.user.id
 
+  // Delete all existing transactions for this user (full replacement on each upload)
+  await prisma.transaction.deleteMany({
+    where: { userId },
+  })
+
   // Parse CSV (assuming Nordea format: semicolon-delimited)
   const transactions: Record<string, string>[] = []
   for (let i = 1; i < lines.length; i++) {

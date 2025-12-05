@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { Check, X, Loader2 } from "lucide-react"
+import { useState, useCallback, useRef, useEffect } from "react"
+import { Check, X, Loader2, RefreshCw, Link2, CheckCircle2, Circle, GripVertical } from "lucide-react"
 import { PDFTableView, InvoiceRow } from "@/components/pdf/PDFTableView"
 import { PDFPreview } from "@/components/pdf/PDFPreview"
 import { Button } from "@/components/ui/button"
@@ -17,15 +17,49 @@ interface AccountingLineItem {
   comment?: string
 }
 
+const MIN_PANEL_WIDTH = 280
+const MAX_PANEL_WIDTH = 800
+const DEFAULT_PANEL_WIDTH = 400
+
 export function VerifySplitView() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null)
   const [accountingItems, setAccountingItems] = useState<AccountingLineItem[]>([])
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [connectResult, setConnectResult] = useState<{ matched: number; total: number } | null>(null)
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH)
+  const [isDragging, setIsDragging] = useState(false)
+  const tableRef = useRef<{ refresh: () => void } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Handle drag resize
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const newWidth = e.clientX - containerRect.left
+      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)))
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", handleMouseUp)
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [isDragging])
 
   const handleSelectInvoice = useCallback((invoice: InvoiceRow) => {
     setSelectedInvoice(invoice)
-    // Fetch accounting entries for this invoice if it has been processed
-    if (invoice.status === "done") {
+    // Fetch accounting entries for this invoice if it has been connected/verified
+    if (["to-verify", "verified"].includes(invoice.status)) {
       fetchAccountingEntries(invoice.id)
     } else {
       setAccountingItems([])
@@ -84,21 +118,89 @@ export function VerifySplitView() {
     }
   }
 
+  const handleConnect = async () => {
+    setIsConnecting(true)
+    setConnectResult(null)
+    try {
+      const response = await fetch("/api/invoices/connect", {
+        method: "POST",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setConnectResult({ matched: data.matched, total: data.total })
+        // Refresh table after connection
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Connect failed:", error)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    window.location.reload()
+  }
+
   // Construct PDF URL from file path - handle both external URLs and local paths
+  // filePath is stored as relative path (e.g., "invoices/userId/file.pdf")
   const pdfUrl = selectedInvoice?.filePath
     ? selectedInvoice.filePath.startsWith("http")
       ? selectedInvoice.filePath
-      : `/api/files/${encodeURIComponent(selectedInvoice.filePath)}`
+      : `/api/files/${selectedInvoice.filePath}`
     : null
 
   return (
-    <div className="flex h-[calc(100vh-57px)]">
-      {/* Left Panel: Invoice Table */}
-      <div className="w-[400px] border-r flex flex-col">
+    <div ref={containerRef} className="flex h-[calc(100vh-57px)]">
+      {/* Left Panel: Invoice Table with Actions */}
+      <div
+        className="border-r flex flex-col relative"
+        style={{ width: panelWidth, minWidth: MIN_PANEL_WIDTH, maxWidth: MAX_PANEL_WIDTH }}
+      >
+        {/* Action Bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConnect}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Link2 className="h-4 w-4 mr-1" />
+              )}
+              Connect
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Refresh
+            </Button>
+          </div>
+        </div>
         <PDFTableView
           onSelectInvoice={handleSelectInvoice}
-          className="flex-1"
+          className="flex-1 overflow-hidden"
         />
+
+        {/* Resize Handle */}
+        <div
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors group ${isDragging ? "bg-primary/30" : ""
+            }`}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            setIsDragging(true)
+          }}
+        >
+          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="h-6 w-6 text-muted-foreground" />
+          </div>
+        </div>
       </div>
 
       {/* Right Panel: PDF Preview + Accounting Items */}
@@ -108,50 +210,72 @@ export function VerifySplitView() {
           <PDFPreview pdfUrl={pdfUrl} className="h-full" />
         </div>
 
-        {/* Accounting Line Items Panel */}
-        {selectedInvoice && selectedInvoice.status === "done" && (
+        {/* Verification Panel */}
+        {selectedInvoice && ["to-verify", "verified"].includes(selectedInvoice.status) && (
           <>
             <Separator />
-            <div className="h-[280px] flex flex-col">
+            <div className="h-[320px] flex flex-col">
               <Card className="flex-1 rounded-none border-0 border-t">
                 <CardHeader className="py-3 px-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium">
-                      Accounting Line Items
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Button
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-sm font-medium">
+                        Invoice Details
+                      </CardTitle>
+                      <Badge
                         variant="outline"
-                        size="sm"
-                        onClick={handleReject}
-                        disabled={isVerifying}
-                        className="text-destructive hover:text-destructive"
+                        className={selectedInvoice.status === "verified"
+                          ? "bg-green-100 text-green-800 border-green-200"
+                          : "bg-purple-100 text-purple-800 border-purple-200"
+                        }
                       >
-                        {isVerifying ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4 mr-1" />
-                        )}
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleVerify}
-                        disabled={isVerifying}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        {isVerifying ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Check className="h-4 w-4 mr-1" />
-                        )}
-                        Verify
-                      </Button>
+                        {selectedInvoice.status === "verified" ? "Verified" : "Pending"}
+                      </Badge>
+                    </div>
+                    {/* Large Verify Checkbox */}
+                    <div
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                      onClick={() => {
+                        if (selectedInvoice.status === "verified") {
+                          handleReject()
+                        } else {
+                          handleVerify()
+                        }
+                      }}
+                    >
+                      <span className="text-sm font-medium">
+                        {selectedInvoice.status === "verified" ? "Verified" : "Mark as Verified"}
+                      </span>
+                      {isVerifying ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      ) : selectedInvoice.status === "verified" ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <Circle className="h-6 w-6 text-muted-foreground hover:text-green-600 transition-colors" />
+                      )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="py-0 px-4">
-                  <ScrollArea className="h-[180px]">
+                  {/* Invoice Info */}
+                  <div className="mb-3 p-3 rounded-lg bg-muted/30 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Supplier:</span>
+                      <span className="font-medium">{selectedInvoice.supplier || "—"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="font-medium">
+                        {selectedInvoice.totalAmount?.toLocaleString("sv-SE") || "—"} {selectedInvoice.currency}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Accounting Line Items */}
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    Accounting Line Items
+                  </div>
+                  <ScrollArea className="h-[140px]">
                     {accountingItems.length > 0 ? (
                       <div className="space-y-2">
                         {accountingItems.map((item, index) => (

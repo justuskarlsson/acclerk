@@ -14,6 +14,7 @@
     "test": "pnpm test:smoke && pnpm test:e2e",
     "db:reset": "dotenv -e .env.test -- tsx tests/helpers/db-reset.ts",
     "db:seed": "dotenv -e .env.test -- tsx tests/helpers/db-seed.ts",
+    "dev:seed": "dotenv -e .env.dev -- tsx scripts/dev-seed.ts",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:storybook": "test-storybook"
@@ -35,7 +36,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.555.0",
-    "next": "16.0.3",
+    "next": "16.0.7",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.11",
     "openai": "^6.9.1",

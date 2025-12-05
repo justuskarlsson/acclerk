@@ -46,14 +46,11 @@ test.describe("Authentication", () => {
     const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
     const page = await context.newPage()
 
-    // Try to access protected API route without authentication
-    const response = await page.request.post("/api/upload-invoices", {})
+    // Try to access protected page without authentication
+    await page.goto("/upload")
 
-    // Should be unauthorized
-    expect(response.status()).toBe(401)
-
-    const body = await response.json()
-    expect(body.error).toContain("Unauthorized")
+    // Should be redirected to login page by middleware
+    expect(page.url()).toContain("/login")
 
     await context.close()
   })

@@ -1,0 +1,121 @@
+/' 
+Use Case Flows diagram for AI Revisor / Acclerk
+Shows three main user flows:
+1. Upload Invoice - upload and analyze invoices (paid or out-invoice)
+2. Upload Transactions - CSV upload with complete replacement
+3. Verify Workflow - connect invoices to transactions and verify matches
+Focus on high-level concepts and status transitions
+'/
+
+@startuml
+
+!define PRIMARY_COLOR #3B82F6
+!define SECONDARY_COLOR #10B981
+!define ACCENT_COLOR #F59E0B
+!define DANGER_COLOR #EF4444
+!define NEUTRAL_COLOR #6B7280
+!define VERIFY_COLOR #8B5CF6
+
+skinparam backgroundColor #F3F4F6
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+participant "User" as User #3B82F6
+participant "Server" as Server #10B981
+database "Database" as DB #F59E0B
+
+== Flow 1: Upload Invoice ==
+
+User -> User : Select invoice type\n(paid by us / out-invoice)
+User -> Server : POST /upload\n(invoice file + type)
+Server -> DB : Save invoice document
+DB --> Server : OK
+Server --> User : 200 OK
+
+note right of DB #D1FAE5
+  Status: **uploaded**
+end note
+
+Server -> Server : Trigger analysis\n(async)
+Server -> DB : Update invoice\n(extracted data)
+
+note right of DB #D1FAE5
+  Status: **analyzed**
+end note
+
+...User sees invoice is analyzed...
+
+== Flow 2: Upload Transactions ==
+
+User -> Server : POST /upload-transactions\n(CSV file)
+Server -> Server : Parse CSV
+Server -> DB : DELETE previous transactions\n(for this user)
+DB --> Server : OK
+Server -> DB : INSERT new transactions\n(complete replacement)
+DB --> Server : OK
+Server --> User : 200 OK
+
+note right of DB #FEF3C7
+  Transactions fully replaced
+  (upload = complete record)
+end note
+
+== Flow 3a: Connect Action ==
+
+User -> Server : POST /transactions/connect
+Server --> User : 200 OK (job started)
+
+note left of User #E0E7FF
+  Button disabled
+  Loading indicator shown
+end note
+
+loop Every 5 seconds
+  User -> Server : GET /transactions/connect/status
+  alt Connection still running
+    Server --> User : { running: true }
+  else Connection complete
+    Server --> User : { running: false }
+  end
+end
+
+Server -> Server : Match invoices\nto transactions
+Server -> DB : Update invoice statuses
+
+note right of DB #F3E8FF
+  Status: **to-verify**
+  or **connection-fail**
+end note
+
+Server -> DB : Remove connection\nrun data
+
+== Flow 3b: Verify Action ==
+
+User -> Server : GET /invoices/:id
+Server --> User : Invoice details +\nconnection info +\nanalysis data
+
+note left of User #E0E7FF
+  PDF preview shown
+  Connection info displayed
+  Analysis data shown
+end note
+
+User -> User : Review invoice\nCheck "verify" checkbox
+User -> Server : PATCH /invoices/:id\n{ verified: true }
+Server -> DB : Update invoice status
+
+note right of DB #D1FAE5
+  Status: **verified**
+end note
+
+Server --> User : 200 OK
+
+note left of User #FEE2E2
+  Can uncheck to revert
+  Status returns to "to-verify"
+end note
+
+@enduml
+

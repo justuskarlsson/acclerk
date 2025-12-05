@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
-import { FileText, Loader2, RefreshCw } from "lucide-react"
+import { FileText, Loader2, RefreshCw, Trash2 } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -13,14 +13,22 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useUIStore } from "@/stores/ui-store"
+
+export type InvoiceStatus =
+  | "uploaded"
+  | "processing"
+  | "analyzed"
+  | "to-verify"
+  | "connection-fail"
+  | "verified"
+  | "error"
 
 export interface InvoiceRow {
   id: string
   filename: string
-  status: "uploading" | "processing" | "done" | "error"
+  status: InvoiceStatus
   createdAt: string
   supplier: string
   totalAmount: number
@@ -29,19 +37,31 @@ export interface InvoiceRow {
 }
 
 const statusConfig: Record<
-  InvoiceRow["status"],
+  InvoiceStatus,
   { label: string; className: string }
 > = {
-  uploading: {
-    label: "Uploading",
+  uploaded: {
+    label: "Uploaded",
     className: "bg-amber-100 text-amber-800 border-amber-200",
   },
   processing: {
     label: "Processing",
     className: "bg-blue-100 text-blue-800 border-blue-200",
   },
-  done: {
-    label: "Done",
+  analyzed: {
+    label: "Analyzed",
+    className: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  },
+  "to-verify": {
+    label: "To Verify",
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+  },
+  "connection-fail": {
+    label: "No Match",
+    className: "bg-orange-100 text-orange-800 border-orange-200",
+  },
+  verified: {
+    label: "Verified",
     className: "bg-green-100 text-green-800 border-green-200",
   },
   error: {
@@ -95,6 +115,30 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
     toggleInvoiceSelection(invoice.id)
   }
 
+  const handleDelete = async (e: React.MouseEvent, invoiceId: string) => {
+    e.stopPropagation() // Prevent row selection
+    
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "DELETE",
+      })
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete invoice")
+      }
+      
+      // Remove from local state
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId))
+      
+      // Clear selection if deleted invoice was selected
+      if (selectedInvoiceIds.includes(invoiceId)) {
+        setSelectedInvoiceIds(selectedInvoiceIds.filter((id) => id !== invoiceId))
+      }
+    } catch (err) {
+      console.error("Delete error:", err)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={cn("flex items-center justify-center h-64", className)}>
@@ -125,28 +169,29 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
   }
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
-      <div className="flex items-center justify-between px-4 py-2 border-b">
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
+      <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
         <h2 className="text-sm font-medium">Invoices ({invoices.length})</h2>
         <Button variant="ghost" size="icon-sm" onClick={fetchInvoices}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader>
+      <div className="flex-1 overflow-auto">
+        <Table className="w-full">
+          <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
-              <TableHead className="w-[200px]">Filename</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[120px]">Date</TableHead>
-              <TableHead>Result</TableHead>
+              <TableHead className="min-w-[140px]">Filename</TableHead>
+              <TableHead className="min-w-[80px]">Status</TableHead>
+              <TableHead className="min-w-[90px]">Date</TableHead>
+              <TableHead className="min-w-[120px]">Result</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {invoices.map((invoice) => {
               const isSelected = selectedInvoiceIds.includes(invoice.id)
               const status = statusConfig[invoice.status]
-              
+
               return (
                 <TableRow
                   key={invoice.id}
@@ -155,38 +200,50 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
                   onClick={() => handleRowClick(invoice)}
                   onDoubleClick={() => handleRowDoubleClick(invoice)}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium max-w-[180px]">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="truncate max-w-[160px]">{invoice.filename}</span>
+                      <span className="truncate" title={invoice.filename}>{invoice.filename}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={status.className}>
+                    <Badge variant="outline" className={cn("whitespace-nowrap text-xs", status.className)}>
                       {status.label}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
                     {format(new Date(invoice.createdAt), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell>
-                    {invoice.status === "done" && invoice.supplier ? (
-                      <span className="text-sm">
+                  <TableCell className="max-w-[180px]">
+                    {["analyzed", "to-verify", "verified"].includes(invoice.status) && invoice.supplier ? (
+                      <span className="text-xs truncate block" title={`${invoice.supplier} • ${invoice.totalAmount.toLocaleString()} ${invoice.currency}`}>
                         {invoice.supplier} • {invoice.totalAmount.toLocaleString()}{" "}
                         {invoice.currency}
                       </span>
                     ) : invoice.status === "error" ? (
-                      <span className="text-destructive text-sm">Failed to process</span>
+                      <span className="text-destructive text-xs">Failed to process</span>
+                    ) : invoice.status === "connection-fail" ? (
+                      <span className="text-orange-600 text-xs">No matching transaction</span>
                     ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
+                      <span className="text-muted-foreground text-xs">—</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={(e) => handleDelete(e, invoice.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               )
             })}
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
     </div>
   )
 }

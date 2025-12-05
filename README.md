@@ -129,20 +129,27 @@ This is the Next.js full-stack application for AI Revisor, migrated from Python 
 |---------|-------------|------|
 | `pnpm dev` | Development server (.env.dev) | 3001 |
 | `pnpm dev:prod` | Development with prod config (.env) | 3000 |
+| `pnpm dev:seed` | Reset dev DB and create default user | - |
 | `pnpm build` | Production build | - |
 | `pnpm start` | Production server | 3000 |
 | `pnpm lint` | Run ESLint | - |
 | `pnpm prisma studio` | Database GUI | - |
 
-### Auto-Login for Development
+### Quick Start for Development
 
-Skip the login page by setting `DEV_AUTO_LOGIN`:
+1. Seed the dev database with a default user:
+   ```bash
+   pnpm dev:seed
+   ```
 
-```bash
-DEV_AUTO_LOGIN=admin@example.com pnpm dev
-```
+2. Start the dev server:
+   ```bash
+   pnpm dev
+   ```
 
-This automatically logs you in as the specified user (must exist in the database). Useful for quickly switching between user accounts during development.
+3. Log in at `http://localhost:3001/login` with:
+   - **Email:** `dev@example.com`
+   - **Password:** `dev123`
 
 ## Testing
 

@@ -4,7 +4,7 @@ export const AccountingEntryLineItemSchema = z.object({
   amount: z.number(),
   sru_code: z.number(),
   sru_code_description: z.string(),
-  comment: z.string().optional(),
+  comment: z.string().nullable(),
 })
 
 export const AccountingEntrySchema = z.object({

@@ -3,8 +3,11 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { saveFile } from "@/lib/storage"
 import { prisma } from "@/lib/db"
+import { analyzeInvoices } from "@/server/actions/invoices"
 
 export async function POST(req: NextRequest) {
+  console.log("[POST /api/upload-invoices] Request received")
+
   // Check for session token cookie first (faster than full session check)
   const sessionToken = req.cookies.get("next-auth.session-token")
   if (!sessionToken?.value) {
@@ -48,12 +51,14 @@ export async function POST(req: NextRequest) {
       const filename = (file as File).name || `upload-${Date.now()}.pdf`
       const filepath = await saveFile(bytes, `invoices/${userId}`, filename)
 
+      console.log("[POST /api/upload-invoices] Saved file:", filename, "->", filepath)
+
       await prisma.invoice.create({
         data: {
           userId,
           filename,
           filePath: filepath,
-          status: "uploading",
+          status: "uploaded",
           supplier: "", // Will be filled after extraction
           invoiceDate: new Date(),
           currency: "",
@@ -63,9 +68,16 @@ export async function POST(req: NextRequest) {
       savedFiles.push(filename)
     }
 
+    console.log("[POST /api/upload-invoices] Upload complete, triggering analysis...")
+
+    // Trigger analysis in background (don't await - let it run async)
+    analyzeInvoices().catch(err => {
+      console.error("[POST /api/upload-invoices] Background analysis failed:", err)
+    })
+
     return NextResponse.json({ storedFiles: savedFiles })
   } catch (error) {
-    console.error("Upload error:", error)
+    console.error("[POST /api/upload-invoices] Upload error:", error)
     return NextResponse.json(
       { error: "Upload failed", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

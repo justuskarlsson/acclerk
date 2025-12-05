@@ -11,7 +11,7 @@ export async function connectTransactions() {
   if (!session?.user?.id) throw new Error("Unauthorized")
 
   const invoices = await prisma.invoice.findMany({
-    where: { userId: session.user.id, status: "done" },
+    where: { userId: session.user.id, status: "analyzed" },
   })
 
   const transactions = await prisma.transaction.findMany({
@@ -25,6 +25,9 @@ export async function connectTransactions() {
   }))
 
   const matchingResult = await matchInvoicesToTransactions(invoiceData, transactionData)
+
+  // Track which invoices were matched
+  const matchedInvoiceIds = new Set<string>()
 
   // Create Match records in database
   for (const match of matchingResult.matches) {
@@ -42,10 +45,31 @@ export async function connectTransactions() {
           reason: match.match_candidate.reason_for_match,
         },
       })
+      matchedInvoiceIds.add(invoice.id)
+
+      // Update invoice status to to-verify
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "to-verify" },
+      })
     }
   }
 
-  return matchingResult
+  // Update unmatched invoices to connection-fail
+  for (const invoice of invoices) {
+    if (!matchedInvoiceIds.has(invoice.id)) {
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "connection-fail" },
+      })
+    }
+  }
+
+  return {
+    ...matchingResult,
+    matched: matchedInvoiceIds.size,
+    total: invoices.length,
+  }
 }
 
 

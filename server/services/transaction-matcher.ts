@@ -1,4 +1,5 @@
 import { openai } from "@/lib/openai"
+import { zodTextFormat } from "openai/helpers/zod"
 import { Invoice } from "@/lib/validations/invoice"
 import { TransactionMatch, MatchingResult, MatchedPair, TransactionMatchSchema } from "@/lib/validations/transaction"
 
@@ -10,7 +11,7 @@ export async function matchInvoiceToTransaction(
   const invoiceText = JSON.stringify(invoice, null, 2)
 
   const response = await openai.responses.parse({
-    model: "o4-mini",
+    model: "gpt-5.1",
     input: [
       {
         role: "user",
@@ -28,7 +29,8 @@ export async function matchInvoiceToTransaction(
     ],
     instructions:
       "Please try to connect the invoice with a transaction. Try to match supplier, date (and if needed, amount). Keep in mind, currency might be different on the invoice and the transaction.",
-    text_format: TransactionMatchSchema,
+    text: { format: zodTextFormat(TransactionMatchSchema, 'transaction_match') },
+    reasoning: { effort: "medium" },
   })
 
   if (!response.output_parsed) {

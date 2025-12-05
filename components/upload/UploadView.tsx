@@ -8,6 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { PDFPreview } from "@/components/pdf/PDFPreview"
 
+// Generate unique ID - works in all environments
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+}
+
 interface FileWithProgress {
   id: string
   file: File
@@ -31,7 +36,7 @@ export function UploadView() {
     )
 
     const fileItems: FileWithProgress[] = pdfFiles.map((file) => ({
-      id: crypto.randomUUID(),
+      id: generateId(),
       file,
       progress: 0,
       status: "pending",
@@ -124,10 +129,10 @@ export function UploadView() {
           prev.map((f) =>
             f.id === fileItem.id
               ? {
-                  ...f,
-                  status: "error" as const,
-                  error: error instanceof Error ? error.message : "Upload failed",
-                }
+                ...f,
+                status: "error" as const,
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
               : f
           )
         )

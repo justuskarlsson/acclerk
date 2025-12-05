@@ -5,7 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "./db"
 import bcrypt from "bcryptjs"
 
-// Build providers list
+// Auth providers
 const providers: NextAuthOptions["providers"] = [
   EmailProvider({
     server: process.env.EMAIL_SERVER,
@@ -43,43 +43,6 @@ const providers: NextAuthOptions["providers"] = [
     },
   }),
 ]
-
-// Dev-only: Add passwordless login provider for auto-login
-if (process.env.NODE_ENV === "development") {
-  providers.push(
-    CredentialsProvider({
-      id: "dev-login",
-      name: "Dev Login",
-      credentials: {
-        email: { label: "Email", type: "email" },
-      },
-      async authorize(credentials) {
-        // Only allow in development
-        if (process.env.NODE_ENV !== "development") {
-          return null
-        }
-
-        if (!credentials?.email) {
-          return null
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
-
-        if (!user) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        }
-      },
-    })
-  )
-}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),

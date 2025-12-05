@@ -37,5 +37,8 @@ export default defineConfig({
         url: "http://localhost:3002",
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
+        // Show server-side console.log output
+        stdout: "pipe",
+        stderr: "pipe",
     },
 })

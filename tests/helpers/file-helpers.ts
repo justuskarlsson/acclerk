@@ -6,17 +6,19 @@ import { join } from "path"
  * File helpers for E2E tests
  */
 
+type FixtureCategory = "invoices" | "transactions" | "out-invoices"
+
 /**
  * Get path to a test fixture file
  */
-export function getTestFixturePath(category: "invoices" | "transactions", filename: string): string {
+export function getTestFixturePath(category: FixtureCategory, filename: string): string {
     return join(process.cwd(), "tests", "fixtures", category, filename)
 }
 
 /**
  * Read a test fixture file as buffer
  */
-export async function readTestFixture(category: "invoices" | "transactions", filename: string): Promise<Buffer> {
+export async function readTestFixture(category: FixtureCategory, filename: string): Promise<Buffer> {
     const path = getTestFixturePath(category, filename)
     return await readFile(path)
 }

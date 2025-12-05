@@ -1,15 +1,23 @@
 import { openai } from "@/lib/openai"
+import { zodTextFormat } from "openai/helpers/zod"
 import { Invoice, InvoiceSchema } from "@/lib/validations/invoice"
 import { createReadStream } from "fs"
+import { getFullPath } from "@/lib/storage"
 
 export async function extractInvoice(filePath: string): Promise<Invoice> {
+  // filePath is relative (e.g., "invoices/userId/file.pdf")
+  // Convert to full filesystem path using storage root
+  const fullPath = getFullPath(filePath)
+
+  console.log("[extractInvoice] Processing:", filePath, "->", fullPath)
+
   const file = await openai.files.create({
-    file: createReadStream(filePath),
+    file: createReadStream(fullPath),
     purpose: "user_data",
   })
 
   const response = await openai.responses.parse({
-    model: "o4-mini",
+    model: "gpt-5.1",
     input: [
       {
         role: "user",
@@ -22,7 +30,8 @@ export async function extractInvoice(filePath: string): Promise<Invoice> {
         ],
       },
     ],
-    text_format: InvoiceSchema,
+    text: { format: zodTextFormat(InvoiceSchema, 'invoice') },
+    reasoning: { effort: "medium" },
   })
 
   if (!response.output_parsed) {

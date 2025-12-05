@@ -1,4 +1,5 @@
 import { openai } from "@/lib/openai"
+import { zodTextFormat } from "openai/helpers/zod"
 import { MatchedPair } from "@/lib/validations/transaction"
 import { AccountingEntry, AccountingEntrySchema } from "@/lib/validations/accounting"
 
@@ -49,15 +50,16 @@ export async function generateAccountingEntry(match: MatchedPair): Promise<Accou
   const matchDataText = JSON.stringify(matchData, null, 2)
 
   const response = await openai.responses.parse({
-    model: "o4-mini",
+    model: "gpt-5.1",
     input: [
       {
         role: "user",
         content: matchDataText,
       },
     ],
-    text_format: AccountingEntrySchema,
+    text: { format: zodTextFormat(AccountingEntrySchema, 'accounting_entry') },
     instructions: ACCOUNTING_INSTRUCTIONS,
+    reasoning: { effort: "medium" },
   })
 
   if (!response.output_parsed) {
