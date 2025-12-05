@@ -49,6 +49,8 @@ export async function generateAccountingEntry(match: MatchedPair): Promise<Accou
   const { match_candidate, ...matchData } = match
   const matchDataText = JSON.stringify(matchData, null, 2)
 
+  console.log("[OpenAI:accounting] Sending request for invoice:", match.invoice.supplier)
+
   const response = await openai.responses.parse({
     model: "gpt-5.1",
     input: [
@@ -62,10 +64,17 @@ export async function generateAccountingEntry(match: MatchedPair): Promise<Accou
     reasoning: { effort: "medium" },
   })
 
+  console.log("[OpenAI:accounting] Response received")
+
   if (!response.output_parsed) {
+    console.log("[OpenAI:accounting] No parsed output")
     throw new Error("Failed to generate accounting entry from OpenAI response")
   }
-  return response.output_parsed as AccountingEntry
+
+  const entry = response.output_parsed as AccountingEntry
+  console.log("[OpenAI:accounting] Generated", entry.line_items.length, "line items, total:", entry.amount)
+
+  return entry
 }
 
 export async function generateAccountingEntries(matches: MatchedPair[]): Promise<AccountingEntry[]> {

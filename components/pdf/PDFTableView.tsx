@@ -17,11 +17,10 @@ import { cn } from "@/lib/utils"
 import { useUIStore } from "@/stores/ui-store"
 
 export type InvoiceStatus =
-  | "uploaded"
   | "processing"
-  | "analyzed"
-  | "to-verify"
-  | "connection-fail"
+  | "pending"
+  | "ready"
+  | "no-match"
   | "verified"
   | "error"
 
@@ -40,23 +39,19 @@ const statusConfig: Record<
   InvoiceStatus,
   { label: string; className: string }
 > = {
-  uploaded: {
-    label: "Uploaded",
-    className: "bg-amber-100 text-amber-800 border-amber-200",
-  },
   processing: {
     label: "Processing",
     className: "bg-blue-100 text-blue-800 border-blue-200",
   },
-  analyzed: {
-    label: "Analyzed",
-    className: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  pending: {
+    label: "Pending",
+    className: "bg-amber-100 text-amber-800 border-amber-200",
   },
-  "to-verify": {
-    label: "To Verify",
+  ready: {
+    label: "Ready",
     className: "bg-purple-100 text-purple-800 border-purple-200",
   },
-  "connection-fail": {
+  "no-match": {
     label: "No Match",
     className: "bg-orange-100 text-orange-800 border-orange-200",
   },
@@ -72,10 +67,12 @@ const statusConfig: Record<
 
 interface PDFTableViewProps {
   onSelectInvoice?: (invoice: InvoiceRow) => void
+  onInvoicesLoaded?: (invoices: InvoiceRow[]) => void
+  onRegisterUpdateStatus?: (updateFn: (invoiceId: string, status: InvoiceStatus) => void) => void
   className?: string
 }
 
-export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) {
+export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpdateStatus, className }: PDFTableViewProps) {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +89,9 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
         throw new Error("Failed to fetch invoices")
       }
       const data = await response.json()
-      setInvoices(data.invoices || [])
+      const loadedInvoices = data.invoices || []
+      setInvoices(loadedInvoices)
+      onInvoicesLoaded?.(loadedInvoices)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load invoices")
     } finally {
@@ -103,6 +102,15 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
   useEffect(() => {
     fetchInvoices()
   }, [])
+
+  // Register update function for parent to update invoice status without refetch
+  useEffect(() => {
+    onRegisterUpdateStatus?.((invoiceId: string, status: InvoiceStatus) => {
+      setInvoices((prev) =>
+        prev.map((inv) => (inv.id === invoiceId ? { ...inv, status } : inv))
+      )
+    })
+  }, [onRegisterUpdateStatus])
 
   const handleRowClick = (invoice: InvoiceRow) => {
     // Single selection mode for preview
@@ -117,19 +125,19 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
 
   const handleDelete = async (e: React.MouseEvent, invoiceId: string) => {
     e.stopPropagation() // Prevent row selection
-    
+
     try {
       const response = await fetch(`/api/invoices/${invoiceId}`, {
         method: "DELETE",
       })
-      
+
       if (!response.ok) {
         throw new Error("Failed to delete invoice")
       }
-      
+
       // Remove from local state
       setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId))
-      
+
       // Clear selection if deleted invoice was selected
       if (selectedInvoiceIds.includes(invoiceId)) {
         setSelectedInvoiceIds(selectedInvoiceIds.filter((id) => id !== invoiceId))
@@ -215,14 +223,14 @@ export function PDFTableView({ onSelectInvoice, className }: PDFTableViewProps) 
                     {format(new Date(invoice.createdAt), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell className="max-w-[180px]">
-                    {["analyzed", "to-verify", "verified"].includes(invoice.status) && invoice.supplier ? (
+                    {["pending", "ready", "verified"].includes(invoice.status) && invoice.supplier ? (
                       <span className="text-xs truncate block" title={`${invoice.supplier} • ${invoice.totalAmount.toLocaleString()} ${invoice.currency}`}>
                         {invoice.supplier} • {invoice.totalAmount.toLocaleString()}{" "}
                         {invoice.currency}
                       </span>
                     ) : invoice.status === "error" ? (
                       <span className="text-destructive text-xs">Failed to process</span>
-                    ) : invoice.status === "connection-fail" ? (
+                    ) : invoice.status === "no-match" ? (
                       <span className="text-orange-600 text-xs">No matching transaction</span>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>

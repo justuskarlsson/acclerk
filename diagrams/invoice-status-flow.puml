@@ -1,0 +1,126 @@
+/'
+Invoice Status State Machine Diagram
+Shows all invoice statuses and transitions between them.
+Distinguishes between user-triggered actions and automatic server actions.
+Statuses: processing, pending, ready, no-match, verified, error
+'/
+
+@startuml
+
+skinparam backgroundColor #F8FAFC
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+  FontColor #1E293B
+  ArrowColor #64748B
+}
+
+' Status colors
+skinparam state<<processing>> {
+  BackgroundColor #DBEAFE
+  BorderColor #3B82F6
+}
+
+skinparam state<<pending>> {
+  BackgroundColor #FEF3C7
+  BorderColor #F59E0B
+}
+
+skinparam state<<ready>> {
+  BackgroundColor #F3E8FF
+  BorderColor #8B5CF6
+}
+
+skinparam state<<nomatch>> {
+  BackgroundColor #FFEDD5
+  BorderColor #F97316
+}
+
+skinparam state<<verified>> {
+  BackgroundColor #D1FAE5
+  BorderColor #10B981
+}
+
+skinparam state<<error>> {
+  BackgroundColor #FEE2E2
+  BorderColor #EF4444
+}
+
+title Invoice Status State Machine
+
+[*] --> Processing : **[User]** Upload Invoice
+
+state "Processing" as Processing <<processing>> {
+  Processing : Extracting data from PDF
+  Processing : Matching to transactions
+  Processing : Generating accounting
+}
+
+state "Pending" as Pending <<pending>> {
+  Pending : Analyzed but no transactions
+  Pending : Waiting for CSV upload
+}
+
+state "Ready" as Ready <<ready>> {
+  Ready : Matched + Accounting done
+  Ready : Awaiting user verification
+}
+
+state "No Match" as NoMatch <<nomatch>> {
+  NoMatch : Could not find matching
+  NoMatch : transaction
+}
+
+state "Verified" as Verified <<verified>> {
+  Verified : User approved
+  Verified : Final state
+}
+
+state "Error" as Error <<error>> {
+  Error : Extraction failed
+}
+
+' Server automatic transitions from Processing
+Processing --> Pending : **[Server]**\nNo transactions exist
+Processing --> Ready : **[Server]**\nMatched + accounted
+Processing --> NoMatch : **[Server]**\nNo match found
+Processing --> Error : **[Server]**\nExtraction failed
+
+' User uploads transactions - triggers re-connect
+Pending --> Ready : **[Server]**\nAfter transaction upload\n(matched)
+Pending --> NoMatch : **[Server]**\nAfter transaction upload\n(no match)
+
+' Retry matching on no-match invoices
+NoMatch --> Ready : **[Server]**\nAfter transaction upload\n(now matched)
+
+' User verification
+Ready --> Verified : **[User]**\nMark as Verified
+Verified --> Ready : **[User]**\nUnverify
+
+legend right
+  |= Color |= Status |= Trigger |
+  | <#DBEAFE> | Processing | Server (automatic) |
+  | <#FEF3C7> | Pending | Server (no transactions) |
+  | <#F3E8FF> | Ready | Server (matched) |
+  | <#FFEDD5> | No Match | Server (no match) |
+  | <#D1FAE5> | Verified | User (verify button) |
+  | <#FEE2E2> | Error | Server (failure) |
+endlegend
+
+note bottom of Processing
+  **User Actions:**
+  - Upload Invoice
+  - Upload Transactions
+  - Verify / Unverify
+  
+  **Server Actions:**
+  - Extract PDF data
+  - Match to transactions
+  - Generate accounting
+end note
+
+@enduml
+

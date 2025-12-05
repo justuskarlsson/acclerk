@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+To query db (dev in this case), use something like:
+```
+cd /root/acclerk && source .env.dev && psql "$DATABASE_URL" -c 'SELECT COUNT(*) as invoices FROM "Invoice"; SELECT COUNT(*) as matches FROM "Match"; SELECT COUNT(*) as accounting_entries FROM "AccountingEntry";'
+```
+
+Tool for updating your plan in cursor seems broken. Prefer to just update whole plan instead of updating parts.

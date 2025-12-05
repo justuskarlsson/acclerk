@@ -10,6 +10,8 @@ export async function matchInvoiceToTransaction(
   const transactionsText = JSON.stringify(transactions, null, 2)
   const invoiceText = JSON.stringify(invoice, null, 2)
 
+  console.log("[OpenAI:matchInvoice] Sending request for invoice:", invoice.supplier)
+
   const response = await openai.responses.parse({
     model: "gpt-5.1",
     input: [
@@ -33,10 +35,18 @@ export async function matchInvoiceToTransaction(
     reasoning: { effort: "medium" },
   })
 
+  console.log("[OpenAI:matchInvoice] Response received")
+
   if (!response.output_parsed) {
+    console.log("[OpenAI:matchInvoice] No parsed output")
     return null
   }
   const match: TransactionMatch = response.output_parsed as TransactionMatch
+
+  console.log("[OpenAI:matchInvoice] Match result:", {
+    transactionId: match.transaction_id,
+    confidence: match.confidence_percentage,
+  })
 
   if (match.confidence_percentage > 50.0 && match.transaction_id) {
     return match

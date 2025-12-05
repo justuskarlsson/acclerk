@@ -9,12 +9,14 @@ export async function extractInvoice(filePath: string): Promise<Invoice> {
   // Convert to full filesystem path using storage root
   const fullPath = getFullPath(filePath)
 
-  console.log("[extractInvoice] Processing:", filePath, "->", fullPath)
+  console.log("[OpenAI:extract] Uploading file:", filePath)
 
   const file = await openai.files.create({
     file: createReadStream(fullPath),
     purpose: "user_data",
   })
+
+  console.log("[OpenAI:extract] Sending extraction request, fileId:", file.id)
 
   const response = await openai.responses.parse({
     model: "gpt-5.1",
@@ -34,10 +36,17 @@ export async function extractInvoice(filePath: string): Promise<Invoice> {
     reasoning: { effort: "medium" },
   })
 
+  console.log("[OpenAI:extract] Response received")
+
   if (!response.output_parsed) {
+    console.log("[OpenAI:extract] No parsed output")
     throw new Error("Failed to extract invoice data from OpenAI response")
   }
-  return response.output_parsed as Invoice
+
+  const invoice = response.output_parsed as Invoice
+  console.log("[OpenAI:extract] Extracted:", invoice.supplier, invoice.total_amount, invoice.currency)
+
+  return invoice
 }
 
 

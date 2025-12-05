@@ -2,74 +2,116 @@
 
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { matchInvoicesToTransactions } from "@/server/services/transaction-matcher"
+import { matchInvoiceToTransaction } from "@/server/services/transaction-matcher"
+import { generateAccountingEntry } from "@/server/services/accounting-generator"
 import { prisma } from "@/lib/db"
 import { Invoice } from "@/lib/validations/invoice"
 
-export async function connectTransactions() {
+/**
+ * Connect pending invoices to transactions.
+ * Processes invoices with status "pending" or "no-match" only.
+ * Runs matching + accounting automatically.
+ */
+export async function connectPendingInvoices() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) throw new Error("Unauthorized")
 
+  console.log("[connectPendingInvoices] Starting for user:", session.user.id)
+
+  // Get pending and no-match invoices only
   const invoices = await prisma.invoice.findMany({
-    where: { userId: session.user.id, status: "analyzed" },
+    where: {
+      userId: session.user.id,
+      status: { in: ["pending", "no-match"] },
+    },
   })
+
+  if (invoices.length === 0) {
+    console.log("[connectPendingInvoices] No pending invoices to connect")
+    return { matched: 0, total: 0 }
+  }
 
   const transactions = await prisma.transaction.findMany({
     where: { userId: session.user.id },
   })
 
-  const invoiceData: Invoice[] = invoices.map((inv) => inv.extractedData as Invoice)
+  if (transactions.length === 0) {
+    console.log("[connectPendingInvoices] No transactions available")
+    return { matched: 0, total: invoices.length }
+  }
+
   const transactionData = transactions.map((t) => ({
     id: t.id,
     ...(t.rawData as Record<string, any>),
   }))
 
-  const matchingResult = await matchInvoicesToTransactions(invoiceData, transactionData)
+  let matchedCount = 0
 
-  // Track which invoices were matched
-  const matchedInvoiceIds = new Set<string>()
+  for (const invoice of invoices) {
+    const invoiceExtracted = invoice.extractedData as Invoice
+    if (!invoiceExtracted) {
+      console.log("[connectPendingInvoices] No extracted data for invoice:", invoice.id)
+      continue
+    }
 
-  // Create Match records in database
-  for (const match of matchingResult.matches) {
-    const invoice = invoices.find((inv) => {
-      const invData = inv.extractedData as Invoice
-      return invData.supplier === match.invoice.supplier && invData.invoice_date === match.invoice.invoice_date
-    })
+    // Try to match this invoice
+    const match = await matchInvoiceToTransaction(invoiceExtracted, transactionData)
 
-    if (invoice) {
-      await prisma.match.create({
+    if (match && match.transaction_id) {
+      // Create match record
+      const matchRecord = await prisma.match.create({
         data: {
           invoiceId: invoice.id,
-          transactionId: match.match_candidate.transaction_id,
-          confidence: match.match_candidate.confidence_percentage,
-          reason: match.match_candidate.reason_for_match,
+          transactionId: match.transaction_id,
+          confidence: match.confidence_percentage,
+          reason: match.reason_for_match,
         },
       })
-      matchedInvoiceIds.add(invoice.id)
 
-      // Update invoice status to to-verify
+      // Generate accounting entry
+      try {
+        const transaction = transactions.find((t) => t.id === match.transaction_id)
+        if (transaction) {
+          const accountingEntry = await generateAccountingEntry({
+            match_candidate: match,
+            transaction: transaction.rawData as Record<string, any>,
+            invoice: invoiceExtracted,
+          })
+
+          await prisma.accountingEntry.create({
+            data: {
+              invoiceId: invoice.id,
+              matchId: matchRecord.id,
+              date: new Date(accountingEntry.date),
+              amount: accountingEntry.amount,
+              lineItems: accountingEntry.line_items as any,
+            },
+          })
+        }
+      } catch (accountingError) {
+        console.error("[connectPendingInvoices] Accounting error:", accountingError)
+      }
+
+      // Update status to ready
       await prisma.invoice.update({
         where: { id: invoice.id },
-        data: { status: "to-verify" },
+        data: { status: "ready" },
       })
+
+      matchedCount++
+      console.log("[connectPendingInvoices] Matched invoice:", invoice.id)
+    } else {
+      // Still no match - keep as no-match
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "no-match" },
+      })
+      console.log("[connectPendingInvoices] No match for invoice:", invoice.id)
     }
   }
 
-  // Update unmatched invoices to connection-fail
-  for (const invoice of invoices) {
-    if (!matchedInvoiceIds.has(invoice.id)) {
-      await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: { status: "connection-fail" },
-      })
-    }
-  }
-
-  return {
-    ...matchingResult,
-    matched: matchedInvoiceIds.size,
-    total: invoices.length,
-  }
+  console.log("[connectPendingInvoices] Complete:", matchedCount, "/", invoices.length)
+  return { matched: matchedCount, total: invoices.length }
 }
 
 

@@ -6,20 +6,30 @@ import { generateAccountingEntries } from "@/server/services/accounting-generato
 import { prisma } from "@/lib/db"
 import { MatchedPair } from "@/lib/validations/transaction"
 
+/**
+ * Create accounting entries for matches that don't have them yet.
+ * Note: Accounting is now done automatically during connect,
+ * so this is mainly for re-processing or manual triggering.
+ */
 export async function createAccounting() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) throw new Error("Unauthorized")
 
+  // Find matches without accounting entries
   const matches = await prisma.match.findMany({
     where: {
       invoice: { userId: session.user.id },
-      verified: true,
+      accounting: null, // Only process matches without accounting
     },
     include: {
       invoice: true,
       transaction: true,
     },
   })
+
+  if (matches.length === 0) {
+    return []
+  }
 
   const matchedPairs: MatchedPair[] = matches.map((match) => ({
     match_candidate: {

@@ -10,14 +10,14 @@ import { prisma } from "@/lib/db"
  * 
  * Body:
  * - verified: true  -> sets status to "verified"
- * - verified: false -> sets status to "to-verify" (unverify)
+ * - verified: false -> sets status to "ready" (unverify)
  */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  
+
   // Check for session token cookie first
   const sessionToken = req.cookies.get("next-auth.session-token")
   if (!sessionToken?.value) {
@@ -52,8 +52,8 @@ export async function POST(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
     }
 
-    // Only allow verification from to-verify or verified status
-    if (!["to-verify", "verified"].includes(invoice.status)) {
+    // Only allow verification from ready or verified status
+    if (!["ready", "verified"].includes(invoice.status)) {
       return NextResponse.json(
         { error: `Cannot verify invoice with status: ${invoice.status}` },
         { status: 400 }
@@ -61,10 +61,16 @@ export async function POST(
     }
 
     // Update status
-    const newStatus = verified ? "verified" : "to-verify"
+    const newStatus = verified ? "verified" : "ready"
     const updatedInvoice = await prisma.invoice.update({
       where: { id },
       data: { status: newStatus },
+    })
+
+    // Also update the match verified status
+    await prisma.match.updateMany({
+      where: { invoiceId: id },
+      data: { verified },
     })
 
     return NextResponse.json({

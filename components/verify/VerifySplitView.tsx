@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Check, X, Loader2, RefreshCw, Link2, CheckCircle2, Circle, GripVertical } from "lucide-react"
-import { PDFTableView, InvoiceRow } from "@/components/pdf/PDFTableView"
+import { Loader2, CheckCircle2, Circle, GripVertical, GripHorizontal, AlertCircle } from "lucide-react"
+import { PDFTableView, InvoiceRow, InvoiceStatus } from "@/components/pdf/PDFTableView"
 import { PDFPreview } from "@/components/pdf/PDFPreview"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface AccountingLineItem {
   amount: number
@@ -19,20 +17,26 @@ interface AccountingLineItem {
 
 const MIN_PANEL_WIDTH = 280
 const MAX_PANEL_WIDTH = 800
-const DEFAULT_PANEL_WIDTH = 400
+const DEFAULT_PANEL_WIDTH = 600
+
+const MIN_ACCOUNTING_HEIGHT = 200
+const MAX_ACCOUNTING_HEIGHT = 600
+const DEFAULT_ACCOUNTING_HEIGHT = 320
 
 export function VerifySplitView() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null)
   const [accountingItems, setAccountingItems] = useState<AccountingLineItem[]>([])
   const [isVerifying, setIsVerifying] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [connectResult, setConnectResult] = useState<{ matched: number; total: number } | null>(null)
+  const [hasPendingInvoices, setHasPendingInvoices] = useState(false)
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH)
   const [isDragging, setIsDragging] = useState(false)
-  const tableRef = useRef<{ refresh: () => void } | null>(null)
+  const [accountingHeight, setAccountingHeight] = useState(DEFAULT_ACCOUNTING_HEIGHT)
+  const [isVerticalDragging, setIsVerticalDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const rightPanelRef = useRef<HTMLDivElement>(null)
+  const updateInvoiceStatusRef = useRef<((id: string, status: InvoiceStatus) => void) | null>(null)
 
-  // Handle drag resize
+  // Handle horizontal drag resize (left panel width)
   useEffect(() => {
     if (!isDragging) return
 
@@ -56,15 +60,51 @@ export function VerifySplitView() {
     }
   }, [isDragging])
 
+  // Handle vertical drag resize (accounting panel height)
+  useEffect(() => {
+    if (!isVerticalDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!rightPanelRef.current) return
+      const panelRect = rightPanelRef.current.getBoundingClientRect()
+      // Calculate height from bottom of container
+      const newHeight = panelRect.bottom - e.clientY
+      setAccountingHeight(Math.min(MAX_ACCOUNTING_HEIGHT, Math.max(MIN_ACCOUNTING_HEIGHT, newHeight)))
+    }
+
+    const handleMouseUp = () => {
+      setIsVerticalDragging(false)
+    }
+
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", handleMouseUp)
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [isVerticalDragging])
+
   const handleSelectInvoice = useCallback((invoice: InvoiceRow) => {
     setSelectedInvoice(invoice)
-    // Fetch accounting entries for this invoice if it has been connected/verified
-    if (["to-verify", "verified"].includes(invoice.status)) {
+    // Fetch accounting entries for this invoice if it's ready/verified
+    if (["ready", "verified"].includes(invoice.status)) {
       fetchAccountingEntries(invoice.id)
     } else {
       setAccountingItems([])
     }
   }, [])
+
+  const handleInvoicesLoaded = useCallback((invoices: InvoiceRow[]) => {
+    setHasPendingInvoices(invoices.some((inv) => inv.status === "pending"))
+  }, [])
+
+  const handleRegisterUpdateStatus = useCallback(
+    (updateFn: (id: string, status: InvoiceStatus) => void) => {
+      updateInvoiceStatusRef.current = updateFn
+    },
+    []
+  )
 
   const fetchAccountingEntries = async (invoiceId: string) => {
     try {
@@ -89,8 +129,9 @@ export function VerifySplitView() {
         body: JSON.stringify({ verified: true }),
       })
       if (response.ok) {
-        // Refresh the table to show updated status
-        window.location.reload()
+        // Update local state instead of reloading
+        updateInvoiceStatusRef.current?.(selectedInvoice.id, "verified")
+        setSelectedInvoice({ ...selectedInvoice, status: "verified" })
       }
     } catch (error) {
       console.error("Verification failed:", error)
@@ -109,37 +150,15 @@ export function VerifySplitView() {
         body: JSON.stringify({ verified: false }),
       })
       if (response.ok) {
-        window.location.reload()
+        // Update local state instead of reloading
+        updateInvoiceStatusRef.current?.(selectedInvoice.id, "ready")
+        setSelectedInvoice({ ...selectedInvoice, status: "ready" })
       }
     } catch (error) {
       console.error("Rejection failed:", error)
     } finally {
       setIsVerifying(false)
     }
-  }
-
-  const handleConnect = async () => {
-    setIsConnecting(true)
-    setConnectResult(null)
-    try {
-      const response = await fetch("/api/invoices/connect", {
-        method: "POST",
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setConnectResult({ matched: data.matched, total: data.total })
-        // Refresh table after connection
-        window.location.reload()
-      }
-    } catch (error) {
-      console.error("Connect failed:", error)
-    } finally {
-      setIsConnecting(false)
-    }
-  }
-
-  const handleRefresh = () => {
-    window.location.reload()
   }
 
   // Construct PDF URL from file path - handle both external URLs and local paths
@@ -157,34 +176,17 @@ export function VerifySplitView() {
         className="border-r flex flex-col relative"
         style={{ width: panelWidth, minWidth: MIN_PANEL_WIDTH, maxWidth: MAX_PANEL_WIDTH }}
       >
-        {/* Action Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleConnect}
-              disabled={isConnecting}
-            >
-              {isConnecting ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              ) : (
-                <Link2 className="h-4 w-4 mr-1" />
-              )}
-              Connect
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Refresh
-            </Button>
+        {/* Pending Banner */}
+        {hasPendingInvoices && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">Upload CSV transactions to complete accounting</span>
           </div>
-        </div>
+        )}
         <PDFTableView
           onSelectInvoice={handleSelectInvoice}
+          onInvoicesLoaded={handleInvoicesLoaded}
+          onRegisterUpdateStatus={handleRegisterUpdateStatus}
           className="flex-1 overflow-hidden"
         />
 
@@ -204,18 +206,30 @@ export function VerifySplitView() {
       </div>
 
       {/* Right Panel: PDF Preview + Accounting Items */}
-      <div className="flex-1 flex flex-col">
+      <div ref={rightPanelRef} className="flex-1 flex flex-col">
         {/* PDF Preview */}
         <div className="flex-1 min-h-0">
           <PDFPreview pdfUrl={pdfUrl} className="h-full" />
         </div>
 
         {/* Verification Panel */}
-        {selectedInvoice && ["to-verify", "verified"].includes(selectedInvoice.status) && (
+        {selectedInvoice && ["ready", "verified"].includes(selectedInvoice.status) && (
           <>
-            <Separator />
-            <div className="h-[320px] flex flex-col">
-              <Card className="flex-1 rounded-none border-0 border-t">
+            {/* Vertical Resize Handle */}
+            <div
+              className={`h-1 cursor-row-resize hover:bg-primary/20 transition-colors group relative ${isVerticalDragging ? "bg-primary/30" : ""
+                }`}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setIsVerticalDragging(true)
+              }}
+            >
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            <div style={{ height: accountingHeight }} className="flex flex-col">
+              <Card className="flex-1 rounded-none border-0 border-t overflow-auto">
                 <CardHeader className="py-3 px-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -229,7 +243,7 @@ export function VerifySplitView() {
                           : "bg-purple-100 text-purple-800 border-purple-200"
                         }
                       >
-                        {selectedInvoice.status === "verified" ? "Verified" : "Pending"}
+                        {selectedInvoice.status === "verified" ? "Verified" : "Ready"}
                       </Badge>
                     </div>
                     {/* Large Verify Checkbox */}
@@ -256,7 +270,7 @@ export function VerifySplitView() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="py-0 px-4">
+                <CardContent className="py-0 px-4 pb-4">
                   {/* Invoice Info */}
                   <div className="mb-3 p-3 rounded-lg bg-muted/30 space-y-1">
                     <div className="flex justify-between text-sm">
@@ -275,41 +289,39 @@ export function VerifySplitView() {
                   <div className="text-xs font-medium text-muted-foreground mb-2">
                     Accounting Line Items
                   </div>
-                  <ScrollArea className="h-[140px]">
-                    {accountingItems.length > 0 ? (
-                      <div className="space-y-2">
-                        {accountingItems.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="font-mono">
-                                {item.sru_code}
-                              </Badge>
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {item.sru_code_description}
+                  {accountingItems.length > 0 ? (
+                    <div className="space-y-2">
+                      {accountingItems.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="font-mono">
+                              {item.sru_code}
+                            </Badge>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {item.sru_code_description}
+                              </p>
+                              {item.comment && (
+                                <p className="text-xs text-muted-foreground">
+                                  {item.comment}
                                 </p>
-                                {item.comment && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {item.comment}
-                                  </p>
-                                )}
-                              </div>
+                              )}
                             </div>
-                            <span className="text-sm font-medium tabular-nums">
-                              {item.amount.toLocaleString("sv-SE")} SEK
-                            </span>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                        No accounting entries found
-                      </div>
-                    )}
-                  </ScrollArea>
+                          <span className="text-sm font-medium tabular-nums">
+                            {item.amount.toLocaleString("sv-SE")} SEK
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                      No accounting entries found
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
