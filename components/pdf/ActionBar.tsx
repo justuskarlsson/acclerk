@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Upload, FileSpreadsheet, ClipboardCheck, User, LogOut } from "lucide-react"
+import { Upload, FileSpreadsheet, ClipboardCheck, User, LogOut, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
@@ -30,6 +30,21 @@ export function ActionBar() {
     <div className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-2">
       {/* Left side - Navigation */}
       <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/overview")}
+              aria-label="Overview"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Overview</p>
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

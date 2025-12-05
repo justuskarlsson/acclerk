@@ -115,6 +115,7 @@ export default function PDFDocumentViewer({ pdfUrl, className }: PDFDocumentProp
                 )}
                 {!error && (
                     <Document
+                        key={pdfUrl}
                         file={pdfUrl}
                         onLoadSuccess={onDocumentLoadSuccess}
                         onLoadError={onDocumentLoadError}
