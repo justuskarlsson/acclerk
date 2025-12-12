@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI Revisor",
-  description: "Automated invoice processing and accounting",
+  description: "Automatiserad fakturahantering och bokföring",
 }
 
 export default function RootLayout({

@@ -40,27 +40,27 @@ const statusConfig: Record<
   { label: string; className: string }
 > = {
   processing: {
-    label: "Processing",
+    label: "Bearbetas",
     className: "bg-blue-100 text-blue-800 border-blue-200",
   },
   pending: {
-    label: "Pending",
+    label: "Väntar",
     className: "bg-amber-100 text-amber-800 border-amber-200",
   },
   ready: {
-    label: "Ready",
+    label: "Klar",
     className: "bg-purple-100 text-purple-800 border-purple-200",
   },
   "no-match": {
-    label: "No Match",
+    label: "Ingen matchning",
     className: "bg-orange-100 text-orange-800 border-orange-200",
   },
   verified: {
-    label: "Verified",
+    label: "Verifierad",
     className: "bg-green-100 text-green-800 border-green-200",
   },
   error: {
-    label: "Error",
+    label: "Fel",
     className: "bg-red-100 text-red-800 border-red-200",
   },
 }
@@ -86,14 +86,14 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
     try {
       const response = await fetch("/api/invoices")
       if (!response.ok) {
-        throw new Error("Failed to fetch invoices")
+        throw new Error("Kunde inte hämta fakturor")
       }
       const data = await response.json()
       const loadedInvoices = data.invoices || []
       setInvoices(loadedInvoices)
       onInvoicesLoaded?.(loadedInvoices)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load invoices")
+      setError(err instanceof Error ? err.message : "Kunde inte ladda fakturor")
     } finally {
       setIsLoading(false)
     }
@@ -132,7 +132,7 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete invoice")
+        throw new Error("Kunde inte ta bort faktura")
       }
 
       // Remove from local state
@@ -161,7 +161,7 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
         <p className="text-destructive text-sm">{error}</p>
         <Button variant="outline" size="sm" onClick={fetchInvoices}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
+          Försök igen
         </Button>
       </div>
     )
@@ -171,7 +171,7 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
     return (
       <div className={cn("flex flex-col items-center justify-center h-64 gap-2", className)}>
         <FileText className="h-12 w-12 text-muted-foreground/50" />
-        <p className="text-muted-foreground text-sm">No invoices uploaded yet</p>
+        <p className="text-muted-foreground text-sm">Inga fakturor uppladdade än</p>
       </div>
     )
   }
@@ -179,7 +179,7 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
-        <h2 className="text-sm font-medium">Invoices ({invoices.length})</h2>
+        <h2 className="text-sm font-medium">Fakturor ({invoices.length})</h2>
         <Button variant="ghost" size="icon-sm" onClick={fetchInvoices}>
           <RefreshCw className="h-4 w-4" />
         </Button>
@@ -188,10 +188,10 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
         <Table className="w-full">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
-              <TableHead className="min-w-[140px]">Filename</TableHead>
+              <TableHead className="min-w-[140px]">Filnamn</TableHead>
               <TableHead className="min-w-[80px]">Status</TableHead>
-              <TableHead className="min-w-[90px]">Date</TableHead>
-              <TableHead className="min-w-[120px]">Result</TableHead>
+              <TableHead className="min-w-[90px]">Datum</TableHead>
+              <TableHead className="min-w-[120px]">Resultat</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -229,9 +229,9 @@ export function PDFTableView({ onSelectInvoice, onInvoicesLoaded, onRegisterUpda
                         {invoice.currency}
                       </span>
                     ) : invoice.status === "error" ? (
-                      <span className="text-destructive text-xs">Failed to process</span>
+                      <span className="text-destructive text-xs">Kunde inte bearbeta</span>
                     ) : invoice.status === "no-match" ? (
-                      <span className="text-orange-600 text-xs">No matching transaction</span>
+                      <span className="text-orange-600 text-xs">Ingen matchande transaktion</span>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}

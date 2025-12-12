@@ -180,7 +180,7 @@ export function VerifySplitView() {
         {hasPendingInvoices && (
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">Upload CSV transactions to complete accounting</span>
+            <span className="text-sm">Ladda upp CSV-transaktioner för att slutföra bokföringen</span>
           </div>
         )}
         <PDFTableView
@@ -234,7 +234,7 @@ export function VerifySplitView() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-sm font-medium">
-                        Invoice Details
+                        Fakturauppgifter
                       </CardTitle>
                       <Badge
                         variant="outline"
@@ -243,7 +243,7 @@ export function VerifySplitView() {
                           : "bg-purple-100 text-purple-800 border-purple-200"
                         }
                       >
-                        {selectedInvoice.status === "verified" ? "Verified" : "Ready"}
+                        {selectedInvoice.status === "verified" ? "Verifierad" : "Klar"}
                       </Badge>
                     </div>
                     {/* Large Verify Checkbox */}
@@ -258,7 +258,7 @@ export function VerifySplitView() {
                       }}
                     >
                       <span className="text-sm font-medium">
-                        {selectedInvoice.status === "verified" ? "Verified" : "Mark as Verified"}
+                        {selectedInvoice.status === "verified" ? "Verifierad" : "Markera som verifierad"}
                       </span>
                       {isVerifying ? (
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -274,11 +274,11 @@ export function VerifySplitView() {
                   {/* Invoice Info */}
                   <div className="mb-3 p-3 rounded-lg bg-muted/30 space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Supplier:</span>
+                      <span className="text-muted-foreground">Leverantör:</span>
                       <span className="font-medium">{selectedInvoice.supplier || "—"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="text-muted-foreground">Belopp:</span>
                       <span className="font-medium">
                         {selectedInvoice.totalAmount?.toLocaleString("sv-SE") || "—"} {selectedInvoice.currency}
                       </span>
@@ -287,7 +287,7 @@ export function VerifySplitView() {
 
                   {/* Accounting Line Items */}
                   <div className="text-xs font-medium text-muted-foreground mb-2">
-                    Accounting Line Items
+                    Bokföringsposter
                   </div>
                   {accountingItems.length > 0 ? (
                     <div className="space-y-2">
@@ -319,7 +319,7 @@ export function VerifySplitView() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-                      No accounting entries found
+                      Inga bokföringsposter hittades
                     </div>
                   )}
                 </CardContent>
@@ -332,7 +332,7 @@ export function VerifySplitView() {
         {!selectedInvoice && (
           <div className="h-[280px] flex items-center justify-center border-t">
             <p className="text-muted-foreground text-sm">
-              Select an invoice to view details
+              Välj en faktura för att visa detaljer
             </p>
           </div>
         )}

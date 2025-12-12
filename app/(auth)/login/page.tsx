@@ -24,7 +24,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError("Felaktig e-post eller lösenord")
         setLoading(false)
       } else if (result?.ok) {
         // Redirect to home page after successful login
@@ -32,7 +32,7 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("Ett fel uppstod. Försök igen.")
       setLoading(false)
     }
   }
@@ -44,7 +44,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
+              E-post
             </label>
             <input
               id="email"
@@ -54,12 +54,12 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border rounded-md"
-              placeholder="your@email.com"
+              placeholder="din@epost.se"
             />
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
+              Lösenord
             </label>
             <input
               id="password"
@@ -69,7 +69,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded-md"
-              placeholder="Password"
+              placeholder="Lösenord"
             />
           </div>
           {error && (
@@ -80,7 +80,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? "Logging in..." : "Logga in"}
+            {loading ? "Loggar in..." : "Logga in"}
           </button>
         </form>
       </div>

@@ -20,7 +20,7 @@ export function TransactionUploadView() {
 
     const handleUpload = useCallback(async (file: File) => {
         if (!file.name.endsWith(".csv")) {
-            setError("Please upload a CSV file")
+            setError("Vänligen ladda upp en CSV-fil")
             return
         }
 
@@ -93,11 +93,11 @@ export function TransactionUploadView() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <FileSpreadsheet className="h-5 w-5" />
-                        Upload Bank Transactions
+                        Ladda upp banktransaktioner
                     </CardTitle>
                     <CardDescription>
-                        Upload a CSV file with your bank transactions. This will replace all
-                        existing transactions.
+                        Ladda upp en CSV-fil med dina banktransaktioner. Detta ersätter alla
+                        befintliga transaktioner.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -127,13 +127,13 @@ export function TransactionUploadView() {
                             {isUploading ? (
                                 <>
                                     <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
-                                    <p className="text-sm font-medium">Uploading...</p>
+                                    <p className="text-sm font-medium">Laddar upp...</p>
                                 </>
                             ) : (
                                 <>
                                     <Upload className="h-10 w-10 text-muted-foreground" />
-                                    <p className="text-sm font-medium">Drop CSV file here</p>
-                                    <p className="text-xs text-muted-foreground">or click to browse</p>
+                                    <p className="text-sm font-medium">Släpp CSV-fil här</p>
+                                    <p className="text-xs text-muted-foreground">eller klicka för att bläddra</p>
                                 </>
                             )}
                         </div>
@@ -145,10 +145,10 @@ export function TransactionUploadView() {
                             <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-green-800">
-                                    Upload successful
+                                    Uppladdning lyckades
                                 </p>
                                 <p className="text-xs text-green-600">
-                                    {uploadResult.count} transactions imported from {uploadResult.filename}
+                                    {uploadResult.count} transaktioner importerade från {uploadResult.filename}
                                 </p>
                             </div>
                         </div>
@@ -159,7 +159,7 @@ export function TransactionUploadView() {
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
                             <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
                             <div>
-                                <p className="text-sm font-medium text-red-800">Upload failed</p>
+                                <p className="text-sm font-medium text-red-800">Uppladdning misslyckades</p>
                                 <p className="text-xs text-red-600">{error}</p>
                             </div>
                         </div>
@@ -167,9 +167,9 @@ export function TransactionUploadView() {
 
                     {/* Info */}
                     <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Supported format: CSV (semicolon-delimited, Nordea format)</p>
+                        <p>Format som stöds: CSV (semikolon-separerad, Nordea-format)</p>
                         <p>
-                            Required columns: Bokföringsdatum, Belopp, Valuta
+                            Obligatoriska kolumner: Bokföringsdatum, Belopp, Valuta
                         </p>
                     </div>
                 </CardContent>

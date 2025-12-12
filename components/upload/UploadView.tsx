@@ -169,8 +169,8 @@ export function UploadView() {
           />
           <div className="flex flex-col items-center gap-2 text-center">
             <Upload className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm font-medium">Drop PDF files here</p>
-            <p className="text-xs text-muted-foreground">or click to browse</p>
+            <p className="text-sm font-medium">Släpp PDF-filer här</p>
+            <p className="text-xs text-muted-foreground">eller klicka för att bläddra</p>
           </div>
         </div>
 
@@ -234,7 +234,7 @@ export function UploadView() {
           <div className="p-4 border-t">
             <Button className="w-full" onClick={uploadFiles}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload {pendingCount} {pendingCount === 1 ? "file" : "files"}
+              Ladda upp {pendingCount} {pendingCount === 1 ? "fil" : "filer"}
             </Button>
           </div>
         )}

@@ -18,9 +18,9 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const taxPlanningSchema = z.object({
-  privateIncome: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Must be 0 or greater")),
-  capitalNetto: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Must be 0 or greater")),
-  companyProfit: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Must be 0 or greater")),
+  privateIncome: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Måste vara 0 eller större")),
+  capitalNetto: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Måste vara 0 eller större")),
+  companyProfit: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Måste vara 0 eller större")),
   ownershipPercentage: z.preprocess((val) => Number(val) || 100, z.number().min(0).max(100)),
 })
 
@@ -162,7 +162,7 @@ export function TaxPlanningForm() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Skatteplanering</h1>
           <p className="text-muted-foreground mt-1">
-            Tax planning for Fåmansbolag (3:12 rules)
+            Skatteplanering för fåmansbolag (3:12-reglerna)
           </p>
         </div>
 
@@ -172,10 +172,10 @@ export function TaxPlanningForm() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5" />
-                Input Values
+                Inmatningsvärden
               </CardTitle>
               <CardDescription>
-                Enter your financial details to calculate optimal tax strategy
+                Ange dina ekonomiska uppgifter för att beräkna optimal skattestrategi
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -185,13 +185,13 @@ export function TaxPlanningForm() {
               >
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="companyProfit">Company Profit (Bolagets vinst)</Label>
+                    <Label htmlFor="companyProfit">Bolagets vinst</Label>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>The profit available for distribution</p>
+                        <p>Vinsten som är tillgänglig för utdelning</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -210,13 +210,13 @@ export function TaxPlanningForm() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="privateIncome">Private Income (Övrig inkomst)</Label>
+                    <Label htmlFor="privateIncome">Övrig inkomst</Label>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Your other taxable income (employment, etc.)</p>
+                        <p>Din övriga beskattningsbara inkomst (anställning m.m.)</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -235,13 +235,13 @@ export function TaxPlanningForm() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="capitalNetto">Capital Netto (Kapitalunderlag)</Label>
+                    <Label htmlFor="capitalNetto">Kapitalunderlag</Label>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Your accumulated capital base for 3:12 rules</p>
+                        <p>Ditt ackumulerade kapitalunderlag för 3:12-reglerna</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -259,7 +259,7 @@ export function TaxPlanningForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ownershipPercentage">Ownership (%)</Label>
+                  <Label htmlFor="ownershipPercentage">Ägarandel (%)</Label>
                   <Input
                     id="ownershipPercentage"
                     type="number"
@@ -272,7 +272,7 @@ export function TaxPlanningForm() {
 
                 <Button type="submit" className="w-full">
                   <Calculator className="h-4 w-4 mr-2" />
-                  Calculate
+                  Beräkna
                 </Button>
               </form>
             </CardContent>
@@ -293,7 +293,7 @@ export function TaxPlanningForm() {
                     <CardHeader className="pb-2">
                       <CardDescription className="flex items-center gap-2">
                         <Banknote className="h-4 w-4" />
-                        Salary (Lön)
+                        Lön
                       </CardDescription>
                       <CardTitle className="text-2xl tabular-nums text-green-600">
                         {formatCurrency(results.salary.netAmount)}
@@ -301,23 +301,23 @@ export function TaxPlanningForm() {
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Total cost</span>
+                        <span>Total kostnad</span>
                         <span>{formatCurrency(results.salary.grossAmount)}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Total tax</span>
+                        <span>Total skatt</span>
                         <span>{formatCurrency(results.salary.tax)}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between font-medium">
-                        <span>Effective rate</span>
+                        <span>Effektiv skattesats</span>
                         <span>{formatPercent(results.salary.effectiveTaxRate)}</span>
                       </div>
                     </CardContent>
                     {results.recommendation === "salary" && (
                       <div className="absolute top-2 right-2">
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Recommended
+                          Rekommenderas
                         </span>
                       </div>
                     )}
@@ -332,7 +332,7 @@ export function TaxPlanningForm() {
                     <CardHeader className="pb-2">
                       <CardDescription className="flex items-center gap-2">
                         <Coins className="h-4 w-4" />
-                        Dividend (Utdelning)
+                        Utdelning
                       </CardDescription>
                       <CardTitle className="text-2xl tabular-nums text-green-600">
                         {formatCurrency(results.dividend.netAmount)}
@@ -340,23 +340,23 @@ export function TaxPlanningForm() {
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Gross dividend</span>
+                        <span>Bruttoutdelning</span>
                         <span>{formatCurrency(results.dividend.grossAmount)}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Total tax</span>
+                        <span>Total skatt</span>
                         <span>{formatCurrency(results.dividend.tax)}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between font-medium">
-                        <span>Effective rate</span>
+                        <span>Effektiv skattesats</span>
                         <span>{formatPercent(results.dividend.effectiveTaxRate)}</span>
                       </div>
                     </CardContent>
                     {results.recommendation === "dividend" && (
                       <div className="absolute top-2 right-2">
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Recommended
+                          Rekommenderas
                         </span>
                       </div>
                     )}
@@ -368,36 +368,36 @@ export function TaxPlanningForm() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <TrendingUp className="h-5 w-5" />
-                      Recommendation
+                      Rekommendation
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
                       {results.recommendation === "salary" && (
                         <>
-                          Based on your inputs, <strong>taking salary</strong> gives you
-                          the best net outcome. This is likely because your other income
-                          is low, making the salary tax brackets favorable.
+                          Baserat på dina uppgifter ger <strong>lön</strong> dig det bästa
+                          nettoresultatet. Detta beror troligen på att din övriga inkomst
+                          är låg, vilket gör löneskattesatserna fördelaktiga.
                         </>
                       )}
                       {results.recommendation === "dividend" && (
                         <>
-                          Based on your inputs, <strong>taking dividend</strong> is more
-                          tax efficient. Your capital base (gränsbelopp) allows you to
-                          take advantage of the lower 20% capital gains tax rate.
+                          Baserat på dina uppgifter är <strong>utdelning</strong> mer
+                          skatteeffektivt. Ditt kapitalunderlag (gränsbelopp) gör att du
+                          kan dra nytta av den lägre skattesatsen på 20% för kapitalinkomst.
                         </>
                       )}
                       {results.recommendation === "mixed" && (
                         <>
-                          The difference between salary and dividend is small. Consider a{" "}
-                          <strong>mixed approach</strong> - take enough salary to build
-                          pension rights, and the rest as dividend.
+                          Skillnaden mellan lön och utdelning är liten. Överväg en{" "}
+                          <strong>kombinerad strategi</strong> - ta tillräckligt med lön
+                          för att bygga pensionsrätt och resten som utdelning.
                         </>
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground mt-4">
-                      Note: This is a simplified calculation. Consult a tax advisor for
-                      personalized advice.
+                      Obs: Detta är en förenklad beräkning. Konsultera en skatterådgivare
+                      för personlig rådgivning.
                     </p>
                   </CardContent>
                 </Card>
@@ -407,7 +407,7 @@ export function TaxPlanningForm() {
                 <CardContent className="text-center">
                   <Calculator className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    Enter your details and click Calculate to see results
+                    Ange dina uppgifter och klicka på Beräkna för att se resultat
                   </p>
                 </CardContent>
               </Card>

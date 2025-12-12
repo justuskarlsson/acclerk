@@ -24,7 +24,7 @@ export function PDFPreview({ pdfUrl, className }: PDFPreviewProps) {
   if (!pdfUrl) {
     return (
       <div className={cn("flex items-center justify-center h-full bg-muted/30 rounded-lg", className)}>
-        <p className="text-muted-foreground text-sm">Select a PDF to preview</p>
+        <p className="text-muted-foreground text-sm">Välj en PDF för att förhandsgranska</p>
       </div>
     )
   }

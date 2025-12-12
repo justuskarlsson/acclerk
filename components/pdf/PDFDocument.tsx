@@ -110,7 +110,7 @@ export default function PDFDocumentViewer({ pdfUrl, className }: PDFDocumentProp
                 )}
                 {error && (
                     <div className="flex items-center justify-center h-full">
-                        <p className="text-destructive text-sm">Failed to load PDF: {error}</p>
+                        <p className="text-destructive text-sm">Kunde inte ladda PDF: {error}</p>
                     </div>
                 )}
                 {!error && (

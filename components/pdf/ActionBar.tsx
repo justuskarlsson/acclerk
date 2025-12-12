@@ -36,13 +36,13 @@ export function ActionBar() {
               variant="ghost"
               size="icon"
               onClick={() => router.push("/overview")}
-              aria-label="Overview"
+              aria-label="Översikt"
             >
               <LayoutDashboard className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Overview</p>
+            <p>Översikt</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -51,13 +51,13 @@ export function ActionBar() {
               variant="ghost"
               size="icon"
               onClick={() => router.push("/verify")}
-              aria-label="Verify Invoices"
+              aria-label="Granska fakturor"
             >
               <ClipboardCheck className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Verify Invoices</p>
+            <p>Granska fakturor</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -66,13 +66,13 @@ export function ActionBar() {
               variant="ghost"
               size="icon"
               onClick={() => router.push("/upload")}
-              aria-label="Upload PDFs"
+              aria-label="Ladda upp PDF:er"
             >
               <Upload className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Upload PDFs</p>
+            <p>Ladda upp PDF:er</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -81,13 +81,13 @@ export function ActionBar() {
               variant="ghost"
               size="icon"
               onClick={() => router.push("/transactions")}
-              aria-label="Upload Transactions"
+              aria-label="Ladda upp transaktioner"
             >
               <FileSpreadsheet className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Upload Transactions</p>
+            <p>Ladda upp transaktioner</p>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -95,14 +95,14 @@ export function ActionBar() {
       {/* Right side - User Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="User menu">
+          <Button variant="ghost" size="icon" aria-label="Användarmeny">
             <User className="h-5 w-5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{session?.user?.name || "User"}</p>
+              <p className="text-sm font-medium">{session?.user?.name || "Användare"}</p>
               <p className="text-xs text-muted-foreground truncate">
                 {session?.user?.email || ""}
               </p>
@@ -111,7 +111,7 @@ export function ActionBar() {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="text-red-600 cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
-            Sign out
+            Logga ut
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
