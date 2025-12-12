@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="sv">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Faktura {{ invoice.invoice_no }}</title>
+    <style>
+        :root {
+            --fg: #111;
+            --muted: #555;
+            --line: #ddd;
+            --accent: #0a84ff;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            color: var(--fg);
+            font: 12px/1.4 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            padding: 14mm 15mm 15mm;
+        }
+
+
+        h1 {
+            margin: 0 0 8mm 0;
+            font-size: 22px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8mm;
+        }
+
+        .box {
+            padding: 8mm;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .meta {
+            text-align: right;
+            font-size: 11px;
+        }
+
+        .kv {
+            margin: 0;
+        }
+
+        .kv dt {
+            float: left;
+            clear: left;
+            width: 48%;
+            color: var(--muted);
+        }
+
+        .kv dd {
+            margin: 0 0 2mm 0;
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10mm;
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        thead th {
+            border-bottom: 2px solid var(--fg);
+            text-align: left;
+            font-weight: 700;
+        }
+
+        tbody td {
+            border-bottom: 1px solid var(--line);
+        }
+
+        tfoot td {
+            border-top: 2px solid var(--fg);
+            font-weight: 600;
+        }
+
+        .right {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .totals {
+            margin-top: 4mm;
+            width: 60%;
+            margin-left: auto;
+        }
+
+        .totals .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .totals .label {
+            color: var(--muted);
+        }
+
+        .totals .pay {
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .footer {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8mm;
+            margin-top: 10mm;
+            font-size: 11px;
+        }
+
+        .f-title {
+            font-weight: 700;
+            margin-bottom: 2mm;
+        }
+
+        .legal {
+            margin-top: 6mm;
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            gap: 14mm;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <h1>Faktura</h1>
+
+        <div class="grid">
+            <div class="box">
+                <div style="font-size:16px;font-weight:700;margin-bottom:3mm;">{{ invoice.seller.name }}</div>
+                <div>{{ invoice.seller.address_line1 }}</div>
+                {% if invoice.seller.address_line2 %}<div>{{ invoice.seller.address_line2 }}</div>{% endif %}
+                <div>{{ invoice.seller.postal_code }} {{ invoice.seller.city }}</div>
+                <div>{{ invoice.seller.country }}</div>
+                {% if invoice.seller.phone %}<div class="muted" style="margin-top:2mm;">Tel: {{ invoice.seller.phone }}
+                </div>{% endif %}
+                {% if invoice.seller.email %}<div class="muted">E-post: {{ invoice.seller.email }}</div>{% endif %}
+            </div>
+
+            <div class="meta box">
+                <dl class="kv">
+                    <dt>Fakturanr</dt>
+                    <dd>{{ invoice.invoice_no }}</dd>
+                    <dt>Fakturadatum</dt>
+                    <dd>{{ invoice.invoice_date }}</dd>
+                    <dt>Förfallodatum</dt>
+                    <dd>{{ invoice.due_date }}</dd>
+                    {% if invoice.ocr %}<dt>OCR</dt>
+                    <dd>{{ invoice.ocr }}</dd>{% endif %}
+                    {% if invoice.our_ref %}<dt>Vår referens</dt>
+                    <dd>{{ invoice.our_ref }}</dd>{% endif %}
+                    {% if invoice.buyer.your_ref %}<dt>Er referens</dt>
+                    <dd>{{ invoice.buyer.your_ref }}</dd>{% endif %}
+                    <dt>Betalningsvillkor</dt>
+                    <dd>{{ invoice.payment_terms_days }} dagar</dd>
+                    <dt>Valuta</dt>
+                    <dd>{{ invoice.currency }}</dd>
+                </dl>
+            </div>
+
+            <div class="box">
+                <div style="font-weight:700;margin-bottom:3mm;">Faktureringsadress</div>
+                <div>{{ invoice.buyer.name }}</div>
+                <div>{{ invoice.buyer.address_line1 }}</div>
+                {% if invoice.buyer.address_line2 %}<div>{{ invoice.buyer.address_line2 }}</div>{% endif %}
+                <div>{{ invoice.buyer.postal_code }} {{ invoice.buyer.city }}</div>
+                <div>{{ invoice.buyer.country }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Benämning</th>
+                    <th class="right">Antal</th>
+                    <th>Enhet</th>
+                    <th class="right">À-pris</th>
+                    <th class="right">Summa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for li in invoice.lines %}
+                <tr>
+                    <td>{{ li.description }}</td>
+                    <td class="right">{{ li.quantity|svnum }}</td>
+                    <td>{{ li.unit }}</td>
+                    <td class="right">{{ li.unit_price|sek(invoice.currency) }}</td>
+                    <td class="right">{{ li.net_amount|sek(invoice.currency) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="row">
+                <div class="label">Exkl. moms</div>
+                <div>{{ invoice.total_net|sek(invoice.currency) }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Moms</div>
+                <div>{{ invoice.total_vat|sek(invoice.currency) }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Totalt</div>
+                <div>{{ invoice.total_gross|sek(invoice.currency) }}</div>
+            </div>
+            <div class="row">
+                <div class="pay">Att betala</div>
+                <div class="pay">{{ invoice.total_gross|sek(invoice.currency) }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Moms {{ invoice.vat_rate_label }}</div>
+                <div class="muted">{{ invoice.total_vat|svnum }}</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>
+                <div class="f-title">Betalning</div>
+                {% if invoice.bank.plusgiro %}<div>Plusgiro: {{ invoice.bank.plusgiro }}</div>{% endif %}
+                {% if invoice.bank.bankgiro %}<div>Bankgiro: {{ invoice.bank.bankgiro }}</div>{% endif %}
+                {% if invoice.bank.iban %}<div>IBAN: {{ invoice.bank.iban }}</div>{% endif %}
+                {% if invoice.bank.bic %}<div>BIC: {{ invoice.bank.bic }}</div>{% endif %}
+            </div>
+            <div>
+                <div class="f-title">Kontakt</div>
+                {% if invoice.seller.phone %}<div>Telefon: {{ invoice.seller.phone }}</div>{% endif %}
+                {% if invoice.seller.email %}<div>E-post: {{ invoice.seller.email }}</div>{% endif %}
+            </div>
+            <div>
+                <div class="f-title">Företagsinfo</div>
+                <div>Organisationsnr: {{ invoice.seller.orgnr }}</div>
+                {% if invoice.seller.vat_reg_no %}<div>Momsreg.nr: {{ invoice.seller.vat_reg_no }}</div>{% endif %}
+                {% if invoice.seller.approved_for_f_tax %}<div>Godkänd för F-skatt</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="legal">
+            <div>Dröjsmålsränta: {{ invoice.interest_rate_percent }}%</div>
+            {% if invoice.ocr %}<div>OCR: {{ invoice.ocr }}</div>{% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
