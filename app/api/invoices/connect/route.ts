@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { connectTransactions } from "@/server/actions/transactions"
+import { connectPendingInvoices } from "@/server/actions/transactions"
 
 /**
  * POST /api/invoices/connect
@@ -27,12 +27,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await connectTransactions()
+    const result = await connectPendingInvoices()
     return NextResponse.json({
       success: true,
       matched: result.matched,
       total: result.total,
-      matches: result.matches.length,
     })
   } catch (error) {
     console.error("Connect invoices error:", error)

@@ -32,7 +32,13 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData()
     const files = formData.getAll("files")
+    const invoiceType = (formData.get("type") as string) || "expense"
     const userId = session.user.id
+
+    // Validate invoice type
+    if (invoiceType !== "expense" && invoiceType !== "income") {
+      return NextResponse.json({ error: "Invalid invoice type" }, { status: 400 })
+    }
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 })
@@ -51,7 +57,7 @@ export async function POST(req: NextRequest) {
       const filename = (file as File).name || `upload-${Date.now()}.pdf`
       const filepath = await saveFile(bytes, `invoices/${userId}`, filename)
 
-      console.log("[POST /api/upload-invoices] Saved file:", filename, "->", filepath)
+      console.log("[POST /api/upload-invoices] Saved file:", filename, "->", filepath, "type:", invoiceType)
 
       await prisma.invoice.create({
         data: {
@@ -59,6 +65,7 @@ export async function POST(req: NextRequest) {
           filename,
           filePath: filepath,
           status: "uploaded",
+          type: invoiceType,
           supplier: "", // Will be filled after extraction
           invoiceDate: new Date(),
           currency: "",

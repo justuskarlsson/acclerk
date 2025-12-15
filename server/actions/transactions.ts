@@ -72,11 +72,12 @@ export async function connectPendingInvoices() {
       try {
         const transaction = transactions.find((t) => t.id === match.transaction_id)
         if (transaction) {
+          const invoiceType = (invoice.type as "expense" | "income") || "expense"
           const accountingEntry = await generateAccountingEntry({
             match_candidate: match,
             transaction: transaction.rawData as Record<string, any>,
             invoice: invoiceExtracted,
-          })
+          }, invoiceType)
 
           await prisma.accountingEntry.create({
             data: {

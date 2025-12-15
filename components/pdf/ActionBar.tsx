@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Upload, FileSpreadsheet, ClipboardCheck, User, LogOut, LayoutDashboard } from "lucide-react"
+import { Upload, FileSpreadsheet, ClipboardCheck, User, LogOut, LayoutDashboard, FilePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
@@ -88,6 +88,21 @@ export function ActionBar() {
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Ladda upp transaktioner</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/invoices/create")}
+              aria-label="Skapa faktura"
+            >
+              <FilePlus className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Skapa faktura</p>
           </TooltipContent>
         </Tooltip>
       </div>

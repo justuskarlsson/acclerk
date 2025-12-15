@@ -58,6 +58,7 @@ model Invoice {
   vatAmount     Float?
   invoiceNumber String?
   status        String   @default("uploading") // uploading, processing, done, error
+  type          String   @default("expense") // "expense" | "income"
   extractedData Json?    // Full Invoice model from extraction
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

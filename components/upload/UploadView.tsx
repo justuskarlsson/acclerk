@@ -5,8 +5,12 @@ import { Upload, X, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { PDFPreview } from "@/components/pdf/PDFPreview"
+
+type InvoiceType = "expense" | "income"
 
 // Generate unique ID - works in all environments
 function generateId(): string {
@@ -25,6 +29,7 @@ export function UploadView() {
   const [files, setFiles] = useState<FileWithProgress[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>("expense")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedFile = files.find((f) => f.id === selectedFileId)
@@ -104,6 +109,7 @@ export function UploadView() {
       try {
         const formData = new FormData()
         formData.append("files", fileItem.file)
+        formData.append("type", invoiceType)
 
         const response = await fetch("/api/upload-invoices", {
           method: "POST",
@@ -138,7 +144,7 @@ export function UploadView() {
         )
       }
     }
-  }, [files])
+  }, [files, invoiceType])
 
   const pendingCount = files.filter((f) => f.status === "pending").length
 
@@ -146,6 +152,33 @@ export function UploadView() {
     <div className="flex h-[calc(100vh-57px)] gap-0">
       {/* Left Panel: File Upload & List */}
       <div className="w-96 border-r flex flex-col bg-background">
+        {/* Invoice Type Toggle */}
+        <div className="mx-4 mt-4 flex items-center justify-center gap-3 p-3 bg-muted/50 rounded-lg">
+          <Label
+            htmlFor="invoice-type"
+            className={cn(
+              "text-sm font-medium cursor-pointer transition-colors",
+              invoiceType === "expense" ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Utgifter
+          </Label>
+          <Switch
+            id="invoice-type"
+            checked={invoiceType === "income"}
+            onCheckedChange={(checked) => setInvoiceType(checked ? "income" : "expense")}
+          />
+          <Label
+            htmlFor="invoice-type"
+            className={cn(
+              "text-sm font-medium cursor-pointer transition-colors",
+              invoiceType === "income" ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Inkomst
+          </Label>
+        </div>
+
         {/* Drop Zone */}
         <div
           className={cn(

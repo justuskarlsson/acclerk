@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { connectTransactions } from "@/server/actions/transactions"
+import { connectPendingInvoices } from "@/server/actions/transactions"
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await connectTransactions()
+    const result = await connectPendingInvoices()
     return NextResponse.json(result)
   } catch (error) {
     return NextResponse.json({ error: "Failed to connect transactions" }, { status: 500 })

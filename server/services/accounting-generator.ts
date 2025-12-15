@@ -3,7 +3,9 @@ import { zodTextFormat } from "openai/helpers/zod"
 import { MatchedPair } from "@/lib/validations/transaction"
 import { AccountingEntry, AccountingEntrySchema } from "@/lib/validations/accounting"
 
-const ACCOUNTING_INSTRUCTIONS = `Given the matching of invoice and transaction, create accounting line items for the transaction. The line items should follow Swedish Skatteverket law.
+type InvoiceType = "expense" | "income"
+
+const EXPENSE_ACCOUNTING_INSTRUCTIONS = `Given the matching of invoice and transaction, create accounting line items for the transaction. This is an EXPENSE invoice (a bill we paid). The line items should follow Swedish Skatteverket law.
 So use the sru code for each line item. The currency should be in SEK, and totalling the amount given per the transaction. So if the invoice amount is in EUR, converter invoice line items to SEK (should total to the transaction amount). To help you, here are some examples done in Fortnox:
 #VER A 1 20250101 "Registreringsavgift Bolagsverket" 20250302
 {
@@ -44,12 +46,35 @@ So use the sru code for each line item. The currency should be in SEK, and total
 #TRANS 2645 {} 34.5 "" "" 0 
 }`
 
-export async function generateAccountingEntry(match: MatchedPair): Promise<AccountingEntry> {
+const INCOME_ACCOUNTING_INSTRUCTIONS = `Given the matching of invoice and transaction, create accounting line items for the transaction. This is an INCOME invoice (a sale where we received payment). The line items should follow Swedish Skatteverket law.
+So use the sru code for each line item. The currency should be in SEK, and totalling the amount given per the transaction. 
+
+For income invoices, use revenue accounts (3xxx series) instead of expense accounts. Example patterns:
+- Bank account (1930) is debited (positive) when receiving payment
+- Revenue account (3xxx) is credited (negative) for the net amount
+- Utgående moms (2610-2619) is credited (negative) for VAT we collected
+
+Example income entry:
+#VER A 7 20250601 "Kundbetalning faktura 1001" 20250601
+{
+#TRANS 1930 {} 12500 "" "" 0
+#TRANS 3011 {} -10000 "" "" 0
+#TRANS 2611 {} -2500 "" "" 0
+}`
+
+export async function generateAccountingEntry(
+  match: MatchedPair,
+  invoiceType: InvoiceType = "expense"
+): Promise<AccountingEntry> {
   // Remove match_candidate from the data sent to OpenAI
   const { match_candidate, ...matchData } = match
   const matchDataText = JSON.stringify(matchData, null, 2)
 
-  console.log("[OpenAI:accounting] Sending request for invoice:", match.invoice.supplier)
+  const instructions = invoiceType === "income"
+    ? INCOME_ACCOUNTING_INSTRUCTIONS
+    : EXPENSE_ACCOUNTING_INSTRUCTIONS
+
+  console.log("[OpenAI:accounting] Sending request for invoice:", match.invoice.supplier, "type:", invoiceType)
 
   const response = await openai.responses.parse({
     model: "gpt-5.1",
@@ -60,7 +85,7 @@ export async function generateAccountingEntry(match: MatchedPair): Promise<Accou
       },
     ],
     text: { format: zodTextFormat(AccountingEntrySchema, 'accounting_entry') },
-    instructions: ACCOUNTING_INSTRUCTIONS,
+    instructions,
     reasoning: { effort: "medium" },
   })
 
@@ -77,12 +102,15 @@ export async function generateAccountingEntry(match: MatchedPair): Promise<Accou
   return entry
 }
 
-export async function generateAccountingEntries(matches: MatchedPair[]): Promise<AccountingEntry[]> {
+export async function generateAccountingEntries(
+  matches: MatchedPair[],
+  invoiceType: InvoiceType = "expense"
+): Promise<AccountingEntry[]> {
   const entries: AccountingEntry[] = []
 
   for (const match of matches) {
     try {
-      const entry = await generateAccountingEntry(match)
+      const entry = await generateAccountingEntry(match, invoiceType)
       entries.push(entry)
     } catch (error) {
       console.error(`Failed to generate accounting entry for match:`, error)

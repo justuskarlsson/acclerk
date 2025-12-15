@@ -14,7 +14,7 @@ interface LineItem {
  * GET /api/overview
  * 
  * Returns overview metrics:
- * - totalIncome: Total revenue (0 for now - no income invoices yet)
+ * - totalIncome: Total revenue from income invoices
  * - totalCost: Sum of cost accounts (4xxx, 5xxx, 6xxx)
  * - vatBalance: Net VAT (ingående - utgående)
  *   - Positive = refund from Skatteverket
@@ -27,20 +27,33 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Get all accounting entries for user's invoices
+    // Get income invoices to calculate total income
+    const incomeInvoices = await prisma.invoice.findMany({
+      where: {
+        userId: session.user.id,
+        type: "income",
+      },
+    })
+    const totalIncome = incomeInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0)
+
+    // Get ALL accounting entries for user's invoices (both expense and income)
+    // - Expense invoices have ingående moms (2640-2650) - what we can claim back
+    // - Income invoices have utgående moms (2610-2619) - what we owe
     const entries = await prisma.accountingEntry.findMany({
       where: {
-        invoice: { userId: session.user.id },
+        invoice: {
+          userId: session.user.id,
+        },
       },
     })
 
     let totalCost = 0
-    let utgaendeMoms = 0  // 2614, 2615, 2616 - negative values (debt)
-    let ingaendeMoms = 0  // 2641, 2645, 2650 - positive values (claim)
+    let utgaendeMoms = 0  // 2610-2619 - negative values (debt to Skatteverket)
+    let ingaendeMoms = 0  // 2640-2650 - positive values (claim from Skatteverket)
 
     for (const entry of entries) {
-      const lineItems = entry.lineItems as LineItem[]
-      
+      const lineItems = entry.lineItems as unknown as LineItem[]
+
       for (const item of lineItems) {
         const code = item.sru_code
         const amount = item.amount
@@ -65,13 +78,20 @@ export async function GET(req: NextRequest) {
     }
 
     // VAT balance: ingående (positive/claim) + utgående (negative/debt)
-    // Positive result = net refund, negative = net payment
+    // Positive result = net refund, negative = net payment to Skatteverket
     const vatBalance = ingaendeMoms + utgaendeMoms
 
+    // Profit: Income - Costs + VAT balance
+    // VAT balance is added because:
+    // - If positive (refund), it increases profit
+    // - If negative (payment), it decreases profit
+    const profit = totalIncome - totalCost + vatBalance
+
     return NextResponse.json({
-      totalIncome: 0, // No income invoices implemented yet
+      totalIncome: Math.round(totalIncome * 100) / 100,
       totalCost: Math.round(totalCost * 100) / 100,
       vatBalance: Math.round(vatBalance * 100) / 100,
+      profit: Math.round(profit * 100) / 100,
       // Detailed breakdown for debugging
       vatDetails: {
         utgaendeMoms: Math.round(utgaendeMoms * 100) / 100,

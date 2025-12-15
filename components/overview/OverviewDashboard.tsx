@@ -9,6 +9,7 @@ interface OverviewData {
   totalIncome: number
   totalCost: number
   vatBalance: number
+  profit: number
   vatDetails?: {
     utgaendeMoms: number
     ingaendeMoms: number
@@ -81,6 +82,37 @@ export function OverviewDashboard() {
           </p>
         </div>
 
+        {/* Profit Card - Highlighted */}
+        <Card className="relative overflow-hidden border-2 border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Vinst
+            </CardDescription>
+            <CardTitle
+              className={cn(
+                "text-4xl tabular-nums",
+                (data?.profit ?? 0) >= 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              )}
+            >
+              {formatCurrency(data?.profit ?? 0)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              Intäkter − Kostnader + Momssaldo
+            </p>
+          </CardContent>
+          <div
+            className={cn(
+              "absolute right-0 top-0 h-full w-2",
+              (data?.profit ?? 0) >= 0 ? "bg-green-500" : "bg-red-500"
+            )}
+          />
+        </Card>
+
         {/* Main Metrics */}
         <div className="grid gap-6 md:grid-cols-3">
           {/* Income Card */}
@@ -96,7 +128,7 @@ export function OverviewDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                Totala intäkter (ej implementerat)
+                Totala intäkter från inkomstfakturor
               </p>
             </CardContent>
             <div className="absolute right-0 top-0 h-full w-1.5 bg-green-500" />
@@ -164,7 +196,7 @@ export function OverviewDashboard() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Utgående moms (2614-2619):</span>
+                  <span className="text-muted-foreground">Utgående moms (2610-2619):</span>
                   <span className="tabular-nums font-medium">
                     {formatCurrency(data.vatDetails.utgaendeMoms)}
                   </span>
